@@ -52,23 +52,61 @@ end license;
 Three build scripts are included:
 
 - `build.sh` only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
-- `build-and-test.sh` in addition to the release version builds unit tests. Building tests requires additonal library (https://libcheck.github.io/check/ ) which is 
-automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
-- `build-debug.sh`builds debug configuration as necessary for running the debugger (gdb).Build and run the application by running: `./build.sh && ./run.sh`
+- `build-debug.sh` builds debug configuration as necessary for running the debugger (gdb) and all tests. 
+   Building tests requires additonal library (https://libcheck.github.io/check/ ) which is 
+   automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a 
+   CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
 
 ## How to Encrypt a Library
 Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that.
 
-Run package tool, for example:
+The commands below can be run from the build directory created when running `build.sh` as described above.
 
+Start by encrypting the library using packagetool:
 ```
-./build/packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath ${IMPACT_BASEDIR}/local_projects/YouLibraryProject
+./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject/YourLibrary/
 ```
-This will encrypt and package the library into `YouLibraryProject.mol` file. If running on https://impact.modelon.cloud and assuming you have added your
+This will encrypt and package the library into `YouLibrary.mol` file. Now copy the `.impact` directory to the build directory:
+```
+cp -a /home/jovyan/impact/local_projects/YouLibraryProject/.impact .
+```
+Adapt `build/.impact/project.json` file to contain correct version information and skip any unneeded content sections, e.g.:
+```
+{
+  "name": "YourLibrary",
+  "format": "1.0.0",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "name": "Modelica",
+      "versionSpecifier": "4.0.0"
+    }
+  ],
+  "content": [
+    {
+      "relpath": "YourLibrary",
+      "contentType": "MODELICA",
+      "name": "YourLibrary",
+      "defaultDisabled": false,
+      "id": "b984a38211d34c8fab2901a242e963ef"
+    }
+  ],
+  "executionOptions": []
+}
+```
+
+Add the updated .impact directory into the library package:
+```
+zip -ur YourLibrary.mol .impact
+```
+
+If running on https://impact.modelon.cloud and assuming you have added your
 own username to the license file you may test the encryption and licensing by unzipping the library into the released projects folder:
 ```
-unzip YouLibraryProject.mol -d ${IMPACT_BASEDIR}/released_projects/
+unzip YouLibrary.mol -d /home/jovyan/impact/released_projects/YourLibrary/
+chmod +x /home/jovyan/impact/released_projects/YourLibrary/YourLibrary/.library/lve_linux64
 ```
+
 After that you can follow the standard process to configure the workspace with your library.
 
 ## How to Update JWT Keys from wellknown

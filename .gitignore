@@ -7,3 +7,4 @@
 /jwks.json
 /jwt_keys/
 /extract/
+.impact/
