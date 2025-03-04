@@ -7,8 +7,9 @@ SEMLA_OPENSSL_ZIP=SemlaOpenSSL-1.1.0-linux64-gcc485.zip
 SEMLA_LIBJWT_ZIP=SemlaLibJWT-1.0.14-linux64-gcc485.zip
 JANSSON_ZIP=jansson-1.0.4.zip
 JWK2KEY=jwk2key
+IMPACT_PUBLIC_KEY_TOOL_PEM=impact_public_key_tool.pem
 
-for ART in ${SEMLA_OPENSSL_ZIP} ${SEMLA_LIBJWT_ZIP} ${JANSSON_ZIP} ${JWK2KEY}
+for ART in ${SEMLA_OPENSSL_ZIP} ${SEMLA_LIBJWT_ZIP} ${JANSSON_ZIP} ${JWK2KEY} ${IMPACT_PUBLIC_KEY_TOOL_PEM}
 do
     if [ ! -f ${ART} ]; then
         echo Downloading ${ART}
@@ -27,11 +28,14 @@ if [ ! -d ../openssl_keys ]; then
     echo "Generating keys for testing in ../openssl_keys"
     mkdir ../openssl_keys
     (
+        SOURCE_DIR=$(pwd)
         cd ../openssl_keys
         openssl genrsa -out "private_key_tool.pem" 4096
         openssl genrsa -out "private_key_lve.pem" 4096
         openssl rsa -pubout -in "private_key_tool.pem" -out "public_key_tool.pem"
         echo public_key_tool.pem > public_key_tools.txt 
+        cp ${SOURCE_DIR}/${IMPACT_PUBLIC_KEY_TOOL_PEM} .
+        echo ${IMPACT_PUBLIC_KEY_TOOL_PEM} >> public_key_tools.txt 
     )
 fi
 
