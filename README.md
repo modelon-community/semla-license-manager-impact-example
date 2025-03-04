@@ -53,7 +53,7 @@ Three build scripts are included:
 
 - `build.sh` only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
 - `build-debug.sh` builds debug configuration as necessary for running the debugger (gdb) and all tests. 
-   Building tests requires additonal library (https://libcheck.github.io/check/ ) which is 
+   Building tests requires additional library (https://libcheck.github.io/check/ ) which is 
    automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a 
    CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
 
