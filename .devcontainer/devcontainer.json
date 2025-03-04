@@ -1,0 +1,20 @@
+{
+	"name": "semla-license-manager-impact-example devcontainer",
+	"dockerComposeFile": ["../docker-compose.yaml"],
+	"service": "semla-license-manager-impact-example",
+	"workspaceFolder": "/workspaces/semla-license-manager-impact-example",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// python
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"njpwerner.autodocstring",
+				// C
+				"ms-vscode.cpptools-extension-pack",
+				// git
+				"eamodio.gitlens"
+			]
+		}
+	}
+}

@@ -1,0 +1,71 @@
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(ctest) (gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            // Resolved by CMake Tools:
+            "cwd": "${cmake.testWorkingDirectory}",
+            "program": "${cmake.testProgram}",
+            "args": [ "${cmake.testArgs}"],
+            "setupCommands": [
+                // {
+                //     // Use this to debug in the library LVE, because it's fork()-ed from the tool process, see mlle_spawn() in mlle_spawn_posix.c
+                //     "description": "Follow fork", 
+                //     "text": "-gdb-set follow-fork-mode child"
+                // },
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "No Fork Mode (necessary when using Check for testing to enable breakpoints inside tests)",
+                    // more information: https://stackoverflow.com/a/50420384
+                    "text": "-gdb-set environment CK_FORK=no"
+                }
+            ]
+        },
+        {
+            "name": "(gdb) test_mfl_license_check",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/license_managers/license_manager/tests",
+            "program": "${workspaceFolder}/build/license_managers/license_manager/tests/test_mfl_license_check",
+            "args": [],
+            "environment": [
+                {
+                    "name": "JWT_PUBLIC_KEYS_DIRECTORY",
+                    "value": "${workspaceFolder}/license_manager/tests/test_public_keys"
+                },
+                {
+                    "name": "CK_DEFAULT_TIMEOUT",
+                    "value": "60"
+                }
+            ],
+
+            "setupCommands": [
+                // {
+                //     // Use this to debug in the library LVE, because it's fork()-ed from the tool process in mlle_spawn() in mlle_spawn_posix.c
+                //    // ( more info: https://stackoverflow.com/questions/6223786/how-can-i-switch-between-different-processes-fork-ed-in-gdb )
+                //     "description": "Follow fork", 
+                //     "text": "-gdb-set follow-fork-mode child"
+                // },
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "No Fork Mode (necessary when using Check for testing to enable breakpoints inside tests)",
+                    // more information: https://stackoverflow.com/a/50420384
+                    "text": "-gdb-set environment CK_FORK=no"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb"
+        }
+    ]
+}

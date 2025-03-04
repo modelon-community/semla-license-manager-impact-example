@@ -1,0 +1,73 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "JWT_PUBLIC_KEYS_DIRECTORY": "${sourceDir}/jwt_keys",
+                "MFL_JWT_LICENSE_FILE_FILENAME": "impact_license_manager_example_license_file"
+            }
+        },
+        {
+            "name": "linux",
+            "inherits": "base",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE":"Release"
+            },
+            "environment": {
+                "CFLAGS": "-std=gnu11"
+            }
+        },
+        {
+            "name": "linux-debug-no-warnings",
+            "inherits": "linux",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE":"Debug",
+                "JWT_PUBLIC_KEYS_DIRECTORY": "${sourceDir}/license_manager/tests/test_public_keys"
+            },
+            "environment": {
+                "VERBOSE": "1",
+                "CFLAGS": "$penv{CFLAGS} -Wno-deprecated-declarations"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "linux",
+            "configurePreset": "linux"
+        },
+        {
+            "name": "linux-debug-no-warnings",
+            "configurePreset": "linux-debug-no-warnings"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "configurePreset": "base"
+        },
+        {
+            "name": "linux",
+            "inherits": "base",
+            "configurePreset": "linux",
+            "environment": {
+                "JWT_PUBLIC_KEYS_DIRECTORY": "${sourceDir}/license_manager/tests/test_public_keys",
+                "CK_DEFAULT_TIMEOUT": "60"
+            }
+        },
+        {
+            "name": "linux-debug-no-warnings",
+            "inherits": "linux",
+            "configurePreset": "linux-debug-no-warnings"
+        }
+    ]
+}

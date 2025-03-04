@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../SEMLA"
+		}
+	],
+	"settings": {
+		"C_Cpp.autoAddFileAssociations": false
+	}
+}

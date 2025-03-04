@@ -1,0 +1,9 @@
+/CMakeUserPresets.json
+/build/
+/jansson*.zip
+/SemlaOpenSSL*.zip
+/SemlaLibJWT*.zip
+/jwk2key
+/jwks.json
+/jwt_keys/
+/extract/

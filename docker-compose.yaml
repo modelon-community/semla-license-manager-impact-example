@@ -1,0 +1,8 @@
+services:
+  semla-license-manager-impact-example:
+    build:
+      dockerfile: Dockerfile
+      target: devcontainer
+    volumes:
+      - ..:/workspaces
+    command: sleep infinity
