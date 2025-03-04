@@ -62,12 +62,12 @@ Locate the Modelon Impact project containing your library. On Modelon Impact clo
 Run package tool, for example:
 
 ```
-./build/packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject
+./build/packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath ${IMPACT_BASEDIR}/local_projects/YouLibraryProject
 ```
 This will encrypt and package the library into `YouLibraryProject.mol` file. If running on https://impact.modelon.cloud and assuming you have added your
 own username to the license file you may test the encryption and licensing by unzipping the library into the released projects folder:
 ```
-unzip YouLibraryProject.mol -d ../../released_projects/
+unzip YouLibraryProject.mol -d ${IMPACT_BASEDIR}/released_projects/
 ```
 After that you can follow the standard process to configure the workspace with your library.
 
