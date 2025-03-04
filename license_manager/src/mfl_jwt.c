@@ -181,7 +181,7 @@ error:
  * Populates jwt_token with the token from handling the URL in the environment
  * variable MODELON_LICENSE_USER_JWT_URL Caller must free jwt_token
  */
-int mfl_jwt_url(char **jwt_token, char *error_msg_buffer)
+static int mfl_jwt_url(char **jwt_token, char *error_msg_buffer)
 {
     char *url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
     if (url_str == NULL) {
@@ -294,7 +294,7 @@ static int mfl_jwt_url_file(char **jwt_token, char *error_msg_buffer)
  * Populates jwt_token with the token in the environment variable
  * MODELON_LICENSE_USER_JWT Caller must free jwt_token
  */
-int mfl_jwt_env_var(char **jwt_token)
+static int mfl_jwt_env_var(char **jwt_token)
 {
     char *env_var = getenv("MODELON_LICENSE_USER_JWT");
     if (env_var == NULL) {
@@ -318,7 +318,7 @@ int mfl_jwt_env_var(char **jwt_token)
  * 2. from handling the URL in the environment variable MODELON_LICENSE_USER_JWT_URL
  * Caller must free jwt_token
  */
-int mfl_jwt_get_token_from_any_jwt_env_var(char **jwt_token,
+static int mfl_jwt_get_token_from_any_jwt_env_var(char **jwt_token,
                                            char *error_msg_buffer)
 {
     int result = MFL_ERROR;
