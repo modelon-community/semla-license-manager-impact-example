@@ -377,6 +377,10 @@ int mfl_jwt_component_license_check(const char *requested_feature,
     int requested_feature_found = 0;
 
     char *required_username = NULL;
+    char *user_object_json_str;
+    json_t *user_object_json;
+    json_t *username_json;
+    const char *username;
 
     status = jwt_valid_new(&jwt_valid, jwt_alg);
     if (status != 0 || jwt_valid == NULL) {
@@ -648,13 +652,9 @@ int mfl_jwt_component_license_check(const char *requested_feature,
         goto error;
     }
 
+    // check that the "user" object contains required_username
     {
         mfl_jwt_license_file_get_required_user(&required_username, error_msg_buffer);
-        char *user_object_json_str;
-        json_t *user_object_json;
-        json_t *username_json;
-        const char *username;
-        // check that the "user" object contains the username
         user_object_json_str = jwt_get_grants_json(jwt, "user");
 
         if (user_object_json_str == NULL) {
@@ -836,6 +836,8 @@ int mfl_jwt_component_license_check(const char *requested_feature,
 
     result = MFL_SUCCESS;
 error:
+    json_decref(user_object_json);
+    free(user_object_json_str);
     free(required_username);
     json_decref(features_list_json);
     free(features_list_json_str);
