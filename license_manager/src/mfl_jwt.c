@@ -416,10 +416,10 @@ int mfl_jwt_component_license_check(const char *requested_feature,
     int requested_feature_found = 0;
 
     char *required_username = NULL;
-    char *user_object_json_str;
-    json_t *user_object_json;
-    json_t *username_json;
-    const char *username;
+    char *user_object_json_str = NULL;
+    json_t *user_object_json = NULL;
+    json_t *username_json = NULL;
+    const char *username = NULL;
 
     status = jwt_valid_new(&jwt_valid, jwt_alg);
     if (status != 0 || jwt_valid == NULL) {
