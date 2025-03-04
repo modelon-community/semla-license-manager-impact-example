@@ -37,9 +37,23 @@
                 "VERBOSE": "1",
                 "CFLAGS": "$penv{CFLAGS} -Wno-deprecated-declarations"
             }
+        },
+        {
+            "name": "linux-no-test",
+            "inherits": "linux",
+            "cacheVariables": {
+                "SKIP_SEMLA_SRC_TESTS": "1"
+            },
+            "environment": {
+                "CFLAGS": "$penv{CFLAGS} -Wno-deprecated-declarations"
+            }
         }
     ],
     "buildPresets": [
+        {
+            "name": "linux-no-test",
+            "configurePreset": "linux-no-test"
+        },
         {
             "name": "linux",
             "configurePreset": "linux"
