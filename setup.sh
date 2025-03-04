@@ -39,7 +39,6 @@ if [ ! -f jwt_keys/public_keys_jwt.txt ]; then
     ./update_jwt_keys_from_wellknown.sh
 fi
 
-mkdir -p ve
 if ! command -v cmake 2>&1 >/dev/null
 then
     echo "cmake not found; setting up in a venv"
