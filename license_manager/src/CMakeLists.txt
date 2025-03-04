@@ -26,6 +26,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/../jansson/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../libjwt/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../public_key_jwt/CMakeLists.txt)
 
-target_link_libraries(license_manager jwt jansson ${ssl_libs} ${extra_ssl_libs})
+target_link_libraries(license_manager decryptor mlle_common jwt jansson ${ssl_libs} ${extra_ssl_libs})
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../tests ${CMAKE_CURRENT_BINARY_DIR}/tests)

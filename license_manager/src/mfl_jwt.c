@@ -138,6 +138,45 @@ void _print_to_error_msg_buffer(char *error_msg_buffer,
                                              error_msg_start);
 }
 
+
+int mfl_jwt_get_entitlement_jwt_from_json_response(char *error_msg_buffer, char **jwt_token, char *json_response) {
+    int result = MFL_ERROR;
+    int status = MFL_ERROR; 
+    json_t *toplevel_object_json; 
+    json_t *data_object_json;
+    json_t *entitlement_object_json;
+    char *jwt_token_readonly_value;
+
+    toplevel_object_json = json_loads(json_response, 0, NULL);
+    if (!json_is_object(toplevel_object_json)) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE, "error: response is not a json object: response:\n%s", json_response);
+        result = MFL_ERROR;
+        goto error;
+    }
+    data_object_json = json_object_get(toplevel_object_json, "data");
+    if (!json_is_object(data_object_json)) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE, "error: value is not a json object: key \"data\" in response: response:\n%s", json_response);
+        result = MFL_ERROR;
+        goto error;
+    }
+    entitlement_object_json = json_object_get(data_object_json, "entitlement");
+    jwt_token_readonly_value = json_string_value(entitlement_object_json);
+    if (jwt_token_readonly_value == NULL) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE, "error: value is not a json string: key \"entitlement\" in \"data\" in response: response:\n%s", json_response);
+        result = MFL_ERROR;
+        goto error;
+    }
+
+    // we need to strdup() the string jwt_token_readonly_value because it is freed when toplevel_object_json is freed
+    *jwt_token = strdup(jwt_token_readonly_value); 
+
+    result = MFL_SUCCESS;
+error:
+    json_decref(toplevel_object_json);
+    return result;
+}
+
+
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
  * Populates jwt_token with the token from handling the URL in the environment
  * variable MODELON_LICENSE_USER_JWT_URL Caller must free jwt_token

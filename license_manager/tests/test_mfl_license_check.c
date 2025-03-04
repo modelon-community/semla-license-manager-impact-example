@@ -26,15 +26,32 @@
 
 #define TEST_REPORT_FN "report.xml"
 
-static int _encode_json(json_t *json, char **jwt_token)
+static void _wrap_jwt_token_in_json_response(char **json_response, char *jwt_token) {
+    char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+    int status = MFL_ERROR; 
+
+    status = mfl_jwt_util_asprintf(
+        error_msg_buffer, json_response,
+        "{\"data\": {\"entitlement\": \"%s\"}}",
+        jwt_token
+    );
+    if (status != MFL_SUCCESS) {
+        ck_abort_msg(error_msg_buffer);
+    }
+}
+
+
+
+static int _encode_json(json_t *json, char **json_response)
 {    
     int result = MFL_ERROR;
+    int status = MFL_ERROR;
     char *json_str;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    int status;
+    char *jwt_token;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
@@ -60,19 +77,29 @@ static int _encode_json(json_t *json, char **jwt_token)
         fprintf(stderr, "jwt_set_alg() failed\n");
         goto error;
     }
-	*jwt_token = jwt_encode_str(jwt);
+    jwt_token = jwt_encode_str(jwt);
+	_wrap_jwt_token_in_json_response(json_response, jwt_token);
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
     free(json_str);
     jwt_free(jwt);
     return result;
 }
-static int _decode_json(json_t **json, char *jwt_token)
+static int _decode_json(json_t **json, char *json_response)
 {
     int result = MFL_ERROR;
     int status;
+    char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+    char *jwt_token;
     jwt_t *jwt = NULL;
     char *returned_json = NULL;
+
+	status = mfl_jwt_get_entitlement_jwt_from_json_response(error_msg_buffer, &jwt_token, json_response);
+    if (status == MFL_ERROR) {
+        ck_abort_msg(error_msg_buffer);
+    }
+
     DECLARE_PUBLIC_KEY_JWT();
     DECLARE_PUBLIC_KEY_JWT_LEN();
     INITIALIZE_PUBLIC_KEY_JWT();
