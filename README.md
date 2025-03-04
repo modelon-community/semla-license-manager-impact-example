@@ -28,6 +28,8 @@ This uses `ctest` (configured with a CMake Preset in [./CMakePresets.json](./CMa
 ./update_jwt_keys_from_wellknown.sh
 ```
 
+The URL to wellknown is set to the Modelon Cloud instance of Impact by default. The URL to wellknown is set in `JWKS_JSON_FILE_URL`  in [./wellknown_url.json](./wellknown_url.json]).
+
 ## How to release
 
 - Run `./release.sh <next_version>` in a terminal standing in this directory (replacing `<next_version>` with a version number of the form `MAJOR.MINOR.PATCH`). This script will:
