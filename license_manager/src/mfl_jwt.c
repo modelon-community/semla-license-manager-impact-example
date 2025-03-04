@@ -145,7 +145,7 @@ int mfl_jwt_get_entitlement_jwt_from_json_response(char *error_msg_buffer, char 
     json_t *toplevel_object_json; 
     json_t *data_object_json;
     json_t *entitlement_object_json;
-    char *jwt_token_readonly_value;
+    const char *jwt_token_readonly_value;
 
     toplevel_object_json = json_loads(json_response, 0, NULL);
     if (!json_is_object(toplevel_object_json)) {
