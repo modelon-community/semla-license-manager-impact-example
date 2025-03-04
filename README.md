@@ -2,10 +2,30 @@
 
 This project is an example of a [SEMLA](https://github.com/modelica/Encryption-and-Licensing) License Manager for Modelon Impact
 
-## How to setup
+## How to setup for use online on https://impact.modelon.cloud
+Login into your Modelon Impact cloud account.
+Navigate to [Project explorer app](https://impact.modelon.cloud/user-redirect/impact/customizations/workspace_management/index.html?view=projects) and checkout 
+this repository.
+
+Use context menu to open VSCode in browser for this checkout. With default location the VSCode URL will be: 
+https://impact.modelon.cloud/user-redirect/vscode/?folder=/home/jovyan/impact/local_projects/Semla-license-manager-impact-example 
+
+Open terminal (Ctrl-Shift-C) and run the setup script: `./setup.sh`. The script will:
+  - Git clone SEMLA repository to `../SEMLA` 
+  - Download dependencies from a release in this repository
+  - Generate keys for testing in `../openssl_keys`
+  - Creates and activates a Python virtual environment under build/venv and installs cmake into it.
+
+## How to setup locally
+We recommend using VS Code with a devcontainer. There is a devcontainer set up in this repo, which enables an easy and reproducible setup.
+The devcontainer mounts in the parent directory of this directory, so that both this directory, and the `../SEMLA` directory are available in the container.
+Pre-requisites are that VS Code and Docker (and WSL if running on Windows) are installed.
+For more information on how to use the devcontainer, search for "devcontainer" in:
+- [SEMLA: Building instructions](https://github.com/modelica/Encryption-and-Licensing/blob/master/src)
 
 - Run `setup.sh`. This will:
   - Git clone SEMLA to `../SEMLA` 
+  - Download dependencies from a release in this repository
   - Generate keys for testing in `../openssl_keys`
 
 The build system assumes that the directories are laid out like this:
@@ -14,37 +34,50 @@ openssl_keys/
 SEMLA/
 semla-license-manager-impact-example/    # (this directory)
 ```
-- Set `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json) to a name that is unique. `MFL_JWT_LICENSE_FILE_FILENAME` will be created in the user's home directory (`$HOME`).
 
-## How to run
+## Create a license file
+The example uses a text file called `license.mo` placed in the top level directory of the library. It is possible to 
+configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json).
 
-- Build and run the application by running: `./build.sh && ./run.sh`
+The license file in this example is expected to have one line per username for the users to be licensed, e.g.,
+```
+model license
+/*
+name.lastname@company.com
+*/
+end license;
+```
 
-This uses `ctest` (configured with a CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite
+## How to build
+Three build scripts are included:
+
+- `build.sh` only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
+- `build-and-test.sh` in addition to the release version builds unit tests. Building tests requires additonal library (https://libcheck.github.io/check/ ) which is 
+automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
+- `build-debug.sh`builds debug configuration as necessary for running the debugger (gdb).Build and run the application by running: `./build.sh && ./run.sh`
+
+## How to Encrypt a Library
+Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that.
+
+Run package tool, for example:
+
+```
+./build/packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject
+```
+This will encrypt and package the library into `YouLibraryProject.mol` file. If running on https://impact.modelon.cloud and assuming you have added your
+own username to the license file you may test the encryption and licensing by unzipping the library into the released projects folder:
+```
+unzip YouLibraryProject.mol -d ../../released_projects/
+```
+After that you can follow the standard process to configure the workspace with your library.
 
 ## How to Update JWT Keys from wellknown
-- Update JWT Keys from wellknown by running:
+JWT keys are downloaded as a part of `setup.sh` run and can be updated by running:
 ```
 ./update_jwt_keys_from_wellknown.sh
 ```
 
 The URL to wellknown is set to the Modelon Cloud instance of Impact by default. The URL to wellknown is set in `JWKS_JSON_FILE_URL`  in [./wellknown_url.json](./wellknown_url.json]).
-
-## How to release
-
-- Run `./release.sh <next_version>` in a terminal standing in this directory (replacing `<next_version>` with a version number of the form `MAJOR.MINOR.PATCH`). This script will:
-  - If the files are not already in a git repo, create a new local git repo on the fly.
-  - Output a zip file `semla-license-manager-impact-example-<next_version>.zip` containing all files under version control in this repo, plus zip files for the dependencies (which are not under version control)
-  - Create a new git tag `v<next_version>` on this repo.
-  - If a remote repo  `origin` is configured: push the tag to the remote repo.
-
-## How to develop
-
-We recommend using VS Code with a devcontainer. There is a devcontainer set up in this repo, which enables an easy and reproducible setup.
-The devcontainer mounts in the parent directory of this directory, so that both this directory, and the `../SEMLA` directory are available in the container.
-Pre-requisites are that VS Code and Docker (and WSL if running on Windows) are installed.
-For more information on how to use the devcontainer, search for "devcontainer" in:
-- [SEMLA: Building instructions](https://github.com/modelica/Encryption-and-Licensing/blob/master/src)
 
 ## How to understand
 
@@ -53,4 +86,12 @@ Good starting points for understanding how this works is to look at the tests, i
   - (or the online version [SEMLA: test_tool.c](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/tests/test_tool.c)) tests how a modelica tool uses the LVE (LVE = Library Vendor Executable -- the executable that is responsible for licensing and encryption). The LVE includes the License Manager.
 - [./license_manager/tests/test_license_manager.cpp](./license_manager/tests/test_license_manager.cpp)
   - tests only the License Manager, without embedding it into an LVE.
+
+## How to release
+
+- Run `./release.sh <next_version>` in a terminal standing in this directory (replacing `<next_version>` with a version number of the form `MAJOR.MINOR.PATCH`). This script will:
+  - If the files are not already in a git repo, create a new local git repo on the fly.
+  - Output a zip file `semla-license-manager-impact-example-<next_version>.zip` containing all files under version control in this repo, plus zip files for the dependencies (which are not under version control)
+  - Create a new git tag `v<next_version>` on this repo.
+  - If a remote repo  `origin` is configured: push the tag to the remote repo.
 
