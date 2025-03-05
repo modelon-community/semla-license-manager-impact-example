@@ -3,8 +3,12 @@
 This project is an example of a [SEMLA](https://github.com/modelica/Encryption-and-Licensing) License Manager for Modelon Impact
 
 ## How to setup for use online on https://impact.modelon.cloud
-Login into your Modelon Impact cloud account.
-Navigate to [Project explorer app](https://impact.modelon.cloud/user-redirect/impact/customizations/workspace_management/index.html?view=projects) and checkout 
+> [!WARNING]  
+> When building online the encrypted library will be only compatible 
+> with the *latest* execution environment and may fail to load in default (stable)
+> and older versions due to system library differences.
+
+Login into your Modelon Impact cloud account, navigate to [Project explorer app](https://impact.modelon.cloud/user-redirect/impact/customizations/workspace_management/index.html?view=projects) and checkout 
 this repository.
 
 Use context menu to open VSCode in browser for this checkout. With default location the VSCode URL will be: 
@@ -100,12 +104,12 @@ Adapt `build/.impact/project.json` file using a text editor to contain correct v
   "executionOptions": []
 }
 ```
-[!IMPORTANT]  
-The version information in the `project.json` file is used for tracking dependencies
-of workspaces and compiled models. It needs to follow semantic version specification
-(https://semver.org).
-You MUST always update the project version when releasing the library to users. The project version
-does not need to match Modelica library version exactly.
+> [!IMPORTANT]  
+> The version information in the `project.json` file is used for tracking dependencies
+> of workspaces and compiled models. It needs to follow semantic version specification
+> (https://semver.org).
+> You MUST always update the project version when releasing the library to users. The project version
+> does not need to match Modelica library version.
 
 Add the updated .impact directory into the library package:
 ```
@@ -125,7 +129,7 @@ library = workspace.import_dependency_from_zip(new_library_file).wait()
 model = w.get_model("YourLibrary.Example.SomeModel")
 dynamic = w.get_custom_function('dynamic')
 compiler_options = dynamic.get_compiler_options()
-fmu = model.compile(compiler_options=compiler_options, compiler_log_level="debug").wait()
+fmu = model.compile(compiler_options=compiler_options, compiler_log_level="info").wait()
 print(fmu.get_log())
 
 # Cleaning up after testing:
