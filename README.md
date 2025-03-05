@@ -14,7 +14,9 @@ Open terminal (Ctrl-Shift-C) and run the setup script: `./setup.sh`. The script 
   - Git clone SEMLA repository to `../SEMLA` 
   - Download dependencies from a release in this repository
   - Generate keys for testing in `../openssl_keys`
-  - Creates and activates a Python virtual environment under build/venv and installs cmake into it.
+  - Creates a Python virtual environment under build/venv and installs cmake into it.
+
+Activate the build environment if you need to use cmake from command line with `source build/venv/activate`.
 
 ## How to setup locally
 We recommend using VS Code with a devcontainer. There is a devcontainer set up in this repo, which enables an easy and reproducible setup.
@@ -60,7 +62,11 @@ Three build scripts are included:
 ## How to Encrypt a Library
 Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that.
 
-The commands below can be run from the build directory created when running `build.sh` as described above.
+The commands below can be run from the *build* directory created when running `build.sh` as described above. The examples assume running on https://impact.modelon.cloud. For a local setup you may need to adapt the path.
+
+```
+cd build
+```
 
 Start by encrypting the library using packagetool:
 ```
@@ -70,12 +76,12 @@ This will encrypt and package the library into `YouLibrary.mol` file. Now copy t
 ```
 cp -a /home/jovyan/impact/local_projects/YouLibraryProject/.impact .
 ```
-Adapt `build/.impact/project.json` file to contain correct version information and skip any unneeded content sections, e.g.:
+Adapt `build/.impact/project.json` file using a text editor to contain correct version information and skip any unneeded content sections, e.g.:
 ```
 {
   "name": "YourLibrary",
   "format": "1.0.0",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "dependencies": [
     {
       "name": "Modelica",
@@ -94,6 +100,12 @@ Adapt `build/.impact/project.json` file to contain correct version information a
   "executionOptions": []
 }
 ```
+[!IMPORTANT]  
+The version information in the `project.json` file is used for tracking dependencies
+of workspaces and compiled models. It needs to follow semantic version specification
+(https://semver.org).
+You MUST always update the project version when releasing the library to users. The project version
+does not need to match Modelica library version exactly.
 
 Add the updated .impact directory into the library package:
 ```
@@ -101,13 +113,27 @@ zip -ur YourLibrary.mol .impact
 ```
 
 If running on https://impact.modelon.cloud and assuming you have added your
-own username to the license file you may test the encryption and licensing by unzipping the library into the released projects folder:
+own username to the license file you may test the encryption and licensing by using Modelon Impact Python client, e.g., from a Jupyter notebook:
 ```
-unzip YouLibrary.mol -d /home/jovyan/impact/released_projects/YourLibrary/
-chmod +x /home/jovyan/impact/released_projects/YourLibrary/YourLibrary/.library/lve_linux64
+from modelon.impact.client import Client
+client = Client()
+workspace = client.create_workspace("TestNewLicensing")
+new_library_file = "/home/jovyan/impact/local_projects/Semla-license-manager-impact-example/build/YourLibrary.mol"
+library = workspace.import_dependency_from_zip(new_library_file).wait()
+
+# compile a test model
+model = w.get_model("YourLibrary.Example.SomeModel")
+dynamic = w.get_custom_function('dynamic')
+compiler_options = dynamic.get_compiler_options()
+fmu = model.compile(compiler_options=compiler_options, compiler_log_level="debug").wait()
+print(fmu.get_log())
+
+# Cleaning up after testing:
+workspace.delete()
+library.delete()
 ```
 
-After that you can follow the standard process to configure the workspace with your library.
+If the compilation passes without issues your library is ready for distribution on Modelon Impact Cloud.
 
 ## How to Update JWT Keys from wellknown
 JWT keys are downloaded as a part of `setup.sh` run and can be updated by running:

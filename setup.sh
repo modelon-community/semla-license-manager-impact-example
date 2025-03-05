@@ -45,13 +45,14 @@ fi
 
 if ! command -v cmake 2>&1 >/dev/null
 then
-    echo "cmake not found; setting up in a venv"
-    if [ ! -d build/venv]; then
-        echo Creating Python venv and installing cmake
+    echo "cmake command not found"
+    if [ ! -d build/venv ]; then
+        echo Creating Python venv and installing cmake into it
         python -m venv build/venv
         . build/venv/bin/activate
         pip install cmake
     fi
+    echo "Activate build virtual environment using 'source build/venv/bin/activate'"
 fi
 
 # if [ ! -f /usr/include/check.h ] ; then
