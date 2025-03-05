@@ -44,8 +44,11 @@ int mfl_jwt_url_http_and_https(char **jwt_token, char *error_msg_buffer)
 
     status = mfl_jwt_util_asprintf(
         error_msg_buffer, &curl_command,
-        "curl --silent --show-error --max-time %d %s --url \"%s\"", timeout,
-        curl_option_insecure, url);
+        "curl --silent --show-error --header \"impact-api-key: %s\" --max-time %d %s --url \"%s\"", 
+        getenv("MODELON_IMPACT_CLIENT_API_KEY"),
+        timeout,
+        curl_option_insecure, 
+        url);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;

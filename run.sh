@@ -1,4 +1,4 @@
 #!/bin/bash
 set -euo pipefail
 
-ctest --preset linux
+ctest --preset linux-debug-no-warnings

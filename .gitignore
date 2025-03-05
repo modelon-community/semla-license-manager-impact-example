@@ -4,6 +4,8 @@
 /SemlaOpenSSL*.zip
 /SemlaLibJWT*.zip
 /jwk2key
+/impact_public_key_tool.pem
 /jwks.json
 /jwt_keys/
 /extract/
+.impact/

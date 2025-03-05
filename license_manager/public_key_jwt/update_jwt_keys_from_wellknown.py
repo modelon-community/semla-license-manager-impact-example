@@ -17,7 +17,9 @@ def main():
     cmake_source_dir=args.cmake_source_dir
     jansson_library_dir=args.jansson_library_dir
 
-    JWKS_JSON_FILE_URL = "https://wellknown.modelon.cloud/.well-known/jwks.json"
+    WELLKNOWN_URL_JSON_FILE = f"{cmake_source_dir}/wellknown_url.json"
+    with open(WELLKNOWN_URL_JSON_FILE, encoding='utf-8') as f:
+        JWKS_JSON_FILE_URL = json.load(f)["JWKS_JSON_FILE_URL"]
     JWKS_JSON_FILE_FILENAME = JWKS_JSON_FILE_URL.rsplit("/", maxsplit=1)[-1]
     JWKS_JSON_FILE = f"{cmake_source_dir}/{JWKS_JSON_FILE_FILENAME}"
     JWT_KEYS_DIR = f"{cmake_source_dir}/jwt_keys"

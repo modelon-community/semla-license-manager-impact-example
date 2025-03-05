@@ -1,5 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-cmake --preset linux
-cmake --build --preset linux
+if [ -d build/venv ]; then
+    . build/venv/bin/activate
+fi
+
+cmake --preset linux-no-test
+cmake --build --preset linux-no-test

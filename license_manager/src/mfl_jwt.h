@@ -35,11 +35,10 @@ int mfl_jwt_check_any_jwt_env_var_set();
 /**
  * @brief  Component license check. The license check will pass if the JWT is valid and “features” list contains the requested feature. 
  * @param requested_feature 
- * @param jwt_token 
  * @param error_msg_buffer 
  * @return MFL_SUCCESS if the license check is passed, MFL_ERROR otherwise.
  */
-int mfl_jwt_component_license_check(const char *requested_feature, char **jwt_token,
+int mfl_jwt_component_license_check(const char *requested_feature,
                                     char *error_msg_buffer);
 
 // private
@@ -48,6 +47,13 @@ size_t mfl_jwt_util_read_file(char **out, FILE* fp, char *error_msg_buffer);
 int mfl_jwt_unsetenv_any_jwt_env_var(void);
 void _print_to_error_msg_buffer(char *error_msg_buffer,
                                        char *error_msg_start);
+
+/** Return MFL_SUCCESS on success, or MFL_ERROR on error.
+ * expected json_response format: '{"data": {"entitlement": "<jwt token>"}}'
+ * Populates jwt_token with the token from json_response.
+ * Caller must free jwt_token.
+ */
+int mfl_jwt_get_entitlement_jwt_from_json_response(char *error_msg_buffer, char **jwt_token, char *json_response);
 
 #define MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT_DEFAULT 10L
 

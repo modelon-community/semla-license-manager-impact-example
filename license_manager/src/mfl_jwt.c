@@ -54,20 +54,17 @@ int mfl_jwt_checkout_feature(mfl_module_data_t *module_data,
 {
     mfl_license_jwt_t *mfl = (mfl_license_jwt_t *)module_data;
     int status;
-    char *jwt_token = NULL;
     fflush(NULL);
     char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
     memset(error_msg_buffer, '\0', MFL_JWT_ERROR_MSG_BUFFER_SIZE);
     if (mfl == NULL) {
         return MFL_ERROR;
     }
-    status =
-        mfl_jwt_component_license_check(feature, &jwt_token, error_msg_buffer);
+    status = mfl_jwt_component_license_check(feature, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
         // fflush(NULL);
     }
-    free(jwt_token);
     return status;
 }
 
@@ -128,8 +125,7 @@ static void _snprintf_and_increment_error_msg_buffer(
     *error_msg_buffer_remaining_size -= error_msg_input_sz;
 }
 
-void _print_to_error_msg_buffer(char *error_msg_buffer,
-                                       char *error_msg_start)
+void _print_to_error_msg_buffer(char *error_msg_buffer, char *error_msg_start)
 {
     char *error_msg_buffer_current_position = error_msg_buffer;
     size_t error_msg_buffer_remaining_size = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
@@ -138,29 +134,80 @@ void _print_to_error_msg_buffer(char *error_msg_buffer,
                                              error_msg_start);
 }
 
+int mfl_jwt_get_entitlement_jwt_from_json_response(char *error_msg_buffer,
+                                                   char **jwt_token,
+                                                   char *json_response)
+{
+    int result = MFL_ERROR;
+    int status = MFL_ERROR;
+    json_t *toplevel_object_json;
+    json_t *data_object_json;
+    json_t *entitlement_object_json;
+    const char *jwt_token_readonly_value;
+
+    toplevel_object_json = json_loads(json_response, 0, NULL);
+    if (!json_is_object(toplevel_object_json)) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: response is not a json object: response:\n%s",
+                 json_response);
+        result = MFL_ERROR;
+        goto error;
+    }
+    data_object_json = json_object_get(toplevel_object_json, "data");
+    if (!json_is_object(data_object_json)) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: value is not a json object: key \"data\" in response: "
+                 "response:\n%s",
+                 json_response);
+        result = MFL_ERROR;
+        goto error;
+    }
+    entitlement_object_json = json_object_get(data_object_json, "entitlement");
+    jwt_token_readonly_value = json_string_value(entitlement_object_json);
+    if (jwt_token_readonly_value == NULL) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: value is not a json string: key \"entitlement\" in "
+                 "\"data\" in response: response:\n%s",
+                 json_response);
+        result = MFL_ERROR;
+        goto error;
+    }
+
+    // we need to strdup() the string jwt_token_readonly_value because it is
+    // freed when toplevel_object_json is freed
+    *jwt_token = strdup(jwt_token_readonly_value);
+
+    result = MFL_SUCCESS;
+error:
+    json_decref(toplevel_object_json);
+    return result;
+}
+
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
- * Populates jwt_token with the token from handling the URL in the environment
- * variable MODELON_LICENSE_USER_JWT_URL Caller must free jwt_token
+ * Populates json_response with the token from handling the URL in the
+ * environment variable MODELON_LICENSE_USER_JWT_URL Caller must free
+ * json_response
  */
-int mfl_jwt_url(char **jwt_token, char *error_msg_buffer)
+static int mfl_jwt_url(char **json_response, char *error_msg_buffer)
 {
     char *url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
     if (url_str == NULL) {
         return MFL_ERROR;
     } else if (strncmp(url_str, "file://", strlen("file://")) == 0) {
-        return mfl_jwt_url_file(jwt_token, error_msg_buffer);
+        return mfl_jwt_url_file(json_response, error_msg_buffer);
     } else if (strncmp(url_str, "http://", strlen("http://")) == 0 ||
                strncmp(url_str, "https://", strlen("https://")) == 0) {
-        return mfl_jwt_url_http_and_https(jwt_token, error_msg_buffer);
+        return mfl_jwt_url_http_and_https(json_response, error_msg_buffer);
     }
 
     const char *error_msg_start = NULL;
     char error_msg_input_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
     size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
     memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
-    error_msg_start = "error: MODELON_LICENSE_USER_JWT_URL=%s: URL does not start "
-                      "with a supported protocol. Supported protocols: "
-                      "'file://', 'http://', or 'https://'";
+    error_msg_start =
+        "error: MODELON_LICENSE_USER_JWT_URL=%s: URL does not start "
+        "with a supported protocol. Supported protocols: "
+        "'file://', 'http://', or 'https://'";
     snprintf(error_msg_input_buffer, error_msg_input_buffer_sz, error_msg_start,
              url_str);
     _print_to_error_msg_buffer(error_msg_buffer, error_msg_input_buffer);
@@ -172,7 +219,9 @@ int mfl_jwt_url(char **jwt_token, char *error_msg_buffer)
  * *strp is set to NULL on error.
  * Caller must free(*strp).
  */
-int mfl_jwt_util_asprintf(char *error_msg_buffer, char **strp, const char *fmt, ...) {
+int mfl_jwt_util_asprintf(char *error_msg_buffer, char **strp, const char *fmt,
+                          ...)
+{
     int bytes_written = 0;
     va_list args;
     va_start(args, fmt);
@@ -184,8 +233,8 @@ int mfl_jwt_util_asprintf(char *error_msg_buffer, char **strp, const char *fmt, 
         size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
         memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
         error_msg_start = "error: asprintf() failed. error message: '%s'";
-        snprintf(error_msg_input_buffer, error_msg_input_buffer_sz, error_msg_start,
-                strerror(errno));
+        snprintf(error_msg_input_buffer, error_msg_input_buffer_sz,
+                 error_msg_start, strerror(errno));
         _print_to_error_msg_buffer(error_msg_buffer, error_msg_input_buffer);
         *strp = NULL;
         return MFL_ERROR;
@@ -204,11 +253,12 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
     size_t out_capacity = 8192;
     char buffer[8192];
     char *buffer_p = buffer;
-    size_t bytes_read;
+    size_t bytes_read = 0;
 
     *out = (char *)malloc(out_capacity * sizeof(**out));
     if (*out == NULL) {
-        return 0;
+        out_sz = 0;
+        goto error;
     }
     while (
         (bytes_read = fread(buffer_p, sizeof(*buffer_p), sizeof(buffer), fp))) {
@@ -217,86 +267,109 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
             out_capacity = out_capacity * 2;
             *out = (char *)realloc(*out, out_capacity * sizeof(**out));
             if (*out == NULL) {
-                return 0;
+                out_sz = 0;
+                goto error;
             }
         }
         memcpy(*out, buffer, bytes_read);
     }
     (*out)[out_sz] = '\0';
+error:
     return out_sz;
 }
 
 static int mfl_jwt_url_file(char **jwt_token, char *error_msg_buffer)
 {
-    char *url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
+    int result = MFL_ERROR;
+    char *url_str = NULL;
+    char *file_path = NULL;
+    FILE *fp = NULL;
+    size_t bytes_read = -1;
+
+    url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
     if (url_str == NULL) {
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    char *file_path = url_str + strlen("file://");
-    FILE *fp = fopen(file_path, "r");
+    file_path = url_str + strlen("file://");
+    fp = fopen(file_path, "r");
     if (fp == NULL) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE, "%s: %s",
                  file_path, strerror(errno));
         LOGE("%s\n", error_msg_buffer);
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    size_t bytes_read = mfl_jwt_util_read_file(jwt_token, fp, error_msg_buffer);
+    bytes_read = mfl_jwt_util_read_file(jwt_token, fp, error_msg_buffer);
     if (bytes_read == 0 || ferror(fp)) {
         _print_to_error_msg_buffer(
-            error_msg_buffer, "error: could open but not read from file set in "
-                              "environment variable MODELON_LICENSE_USER_JWT_URL");
-        return MFL_ERROR;
+            error_msg_buffer,
+            "error: could open but not read from file set in "
+            "environment variable MODELON_LICENSE_USER_JWT_URL");
+        result = MFL_ERROR;
+        goto error;
     }
-    return MFL_SUCCESS;
+    result = MFL_SUCCESS;
+error:
+    if (fp != NULL) {
+        fclose(fp);
+    }
+    return result;
 }
 
-
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
- * Populates jwt_token with the token in the environment variable
- * MODELON_LICENSE_USER_JWT Caller must free jwt_token
+ * Populates json_response with the token in the environment variable
+ * MODELON_LICENSE_USER_JWT Caller must free json_response
  */
-int mfl_jwt_env_var(char **jwt_token)
+static int mfl_jwt_env_var(char **json_response)
 {
+    int result = MFL_ERROR;
     char *env_var = getenv("MODELON_LICENSE_USER_JWT");
     if (env_var == NULL) {
-        *jwt_token = malloc(1);
-        if (*jwt_token == NULL) {
-            return MFL_ERROR;
-        }
-        **jwt_token = '\0';
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    *jwt_token = strdup(env_var);
-    if (*jwt_token == NULL) {
-        return MFL_ERROR;
+    *json_response = strdup(env_var);
+    if (*json_response == NULL) {
+        result = MFL_ERROR;
+        goto error;
     }
-    return MFL_SUCCESS;
+
+    result = MFL_SUCCESS;
+error:
+    return result;
 }
 
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
  * Populates jwt_token with the token. Common entrypoint to handle both cases:
  * 1. in the environment variable MODELON_LICENSE_USER_JWT
- * 2. from handling the URL in the environment variable MODELON_LICENSE_USER_JWT_URL
- * Caller must free jwt_token
+ * 2. from handling the URL in the environment variable
+ * MODELON_LICENSE_USER_JWT_URL Caller must free jwt_token
  */
-int mfl_jwt_get_token_from_any_jwt_env_var(char **jwt_token,
-                                           char *error_msg_buffer)
+static int mfl_jwt_get_token_from_any_jwt_env_var(char **jwt_token,
+                                                  char *error_msg_buffer)
 {
     int result = MFL_ERROR;
-    result = mfl_jwt_env_var(jwt_token);
-    if (result == MFL_SUCCESS) {
-        return result;
-    } else {
-        free(*jwt_token);
-        *jwt_token = NULL;
+    int status = MFL_ERROR;
+    char *json_response = NULL;
+
+    status = mfl_jwt_env_var(&json_response);
+    if (status != MFL_SUCCESS) {
+        status = mfl_jwt_url(&json_response, error_msg_buffer);
+        if (status != MFL_SUCCESS) {
+            result = status;
+            goto error;
+        }
     }
-    result = mfl_jwt_url(jwt_token, error_msg_buffer);
-    if (result == MFL_SUCCESS) {
-        return result;
-    }
+
+    mfl_jwt_get_entitlement_jwt_from_json_response(error_msg_buffer, jwt_token,
+                                                   json_response);
+
+    result = MFL_SUCCESS;
+error:
+    free(json_response);
     return result;
 }
-
 
 static int _jwt_decode_using_compiled_in_key(jwt_t **jwt, char *jwt_token,
                                              char *error_msg_buffer)
@@ -359,11 +432,12 @@ error:
 }
 
 int mfl_jwt_component_license_check(const char *requested_feature,
-                                    char **jwt_token, char *error_msg_buffer)
+                                    char *error_msg_buffer)
 {
     int result = MFL_ERROR;
-    const char *FORMAT_VERSION = "1.0.0"; // The version of the token schema
     int status;
+    const char *FORMAT_VERSION = "1.0.0"; // The version of the token schema
+    char *jwt_token = NULL;
     jwt_t *jwt = NULL;
     jwt_valid_t *jwt_valid = NULL;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
@@ -377,6 +451,10 @@ int mfl_jwt_component_license_check(const char *requested_feature,
     int requested_feature_found = 0;
 
     char *required_username = NULL;
+    char *user_object_json_str = NULL;
+    json_t *user_object_json = NULL;
+    json_t *username_json = NULL;
+    const char *username = NULL;
 
     status = jwt_valid_new(&jwt_valid, jwt_alg);
     if (status != 0 || jwt_valid == NULL) {
@@ -396,13 +474,13 @@ int mfl_jwt_component_license_check(const char *requested_feature,
         goto error;
     }
     status =
-        mfl_jwt_get_token_from_any_jwt_env_var(jwt_token, error_msg_buffer);
+        mfl_jwt_get_token_from_any_jwt_env_var(&jwt_token, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
     }
     status =
-        _jwt_decode_using_compiled_in_key(&jwt, *jwt_token, error_msg_buffer);
+        _jwt_decode_using_compiled_in_key(&jwt, jwt_token, error_msg_buffer);
     if (status != 0 || jwt == NULL) {
         goto error;
     }
@@ -648,15 +726,15 @@ int mfl_jwt_component_license_check(const char *requested_feature,
         goto error;
     }
 
+    // check that the "user" object contains required_username
     {
-        mfl_jwt_license_file_get_required_user(&required_username, error_msg_buffer);
-        char *user_object_json_str;
-        json_t *user_object_json;
-        json_t *username_json;
-        const char *username;
-        // check that the "user" object contains the username
+        status = mfl_jwt_license_file_get_required_user(&required_username,
+                                                        error_msg_buffer);
+        if (status != MFL_SUCCESS) {
+            result = status;
+            goto error;
+        }
         user_object_json_str = jwt_get_grants_json(jwt, "user");
-
         if (user_object_json_str == NULL) {
             const char *error_msg_start = NULL;
             const char *error_msg_description_jwt = NULL;
@@ -791,8 +869,9 @@ int mfl_jwt_component_license_check(const char *requested_feature,
             char error_msg_input_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
             size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
             memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
-            error_msg_start = "error: User '%s' is not licensed to use this library."
-                              "The user that is licensed to use this library is '%s'";
+            error_msg_start =
+                "error: User '%s' is not licensed to use this library."
+                "The user that is licensed to use this library is '%s'";
             snprintf(error_msg_input_buffer, error_msg_input_buffer_sz,
                      error_msg_start, required_username, username);
             _snprintf_and_increment_error_msg_buffer(
@@ -836,6 +915,9 @@ int mfl_jwt_component_license_check(const char *requested_feature,
 
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
+    json_decref(user_object_json);
+    free(user_object_json_str);
     free(required_username);
     json_decref(features_list_json);
     free(features_list_json_str);

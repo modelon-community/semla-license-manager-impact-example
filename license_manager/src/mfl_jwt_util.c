@@ -13,6 +13,8 @@
 #include "mfl_jwt_util.h"
 #include "mfl_jwt_curl.h"
 
+extern FILE* mlle_log;
+
 /** Runs a command with popen()
  * Returns bytes read on stdout on success (may be 0), or -1 on error.
  * *command_stdout is set to NULL on error.
@@ -45,9 +47,10 @@ int mfl_jwt_util_popen(char *command, char **command_stdout,
         goto error;
     }
 
+    /* TODO: figure out why redirection results in 512 code or switch back to libcurl */
     status =
         mfl_jwt_util_asprintf(error_msg_buffer, &command_with_stderr,
-                              "%s 2>&%d", command, command_stderr_pipe_fd[1]);
+                              "%s 2>&1", command, command_stderr_pipe_fd[1]);
     if (status != MFL_SUCCESS) {
         result = -1;
         goto error;
@@ -75,6 +78,20 @@ int mfl_jwt_util_popen(char *command, char **command_stdout,
     result = mfl_jwt_util_read_file(command_stdout, command_stdout_fp,
                                     error_msg_buffer);
 error:
+    if(mlle_log) {
+        fprintf(mlle_log, "mfl_jwt_util_popen: \n"
+        "command: %s\n"
+        "stdout: %s\n"
+        "error_msg_buffer: %s\n"
+        "result: %d\n"
+        "status: %d\n",
+            command,
+            *command_stdout,
+            error_msg_buffer,
+            result,
+            status);
+    }
+
     if (command_stdout_fp != NULL) {
         command_exit_status = pclose(command_stdout_fp);
         if (command_exit_status < 0) {
@@ -85,10 +102,9 @@ error:
             mfl_jwt_util_read_file(
                 &command_stderr, command_stderr_fp, error_msg_buffer);
             snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-                     "error: command failed. exit status: '%d' stderr "
-                     "output: '%s' "
-                     "command: '%s'",
-                     strerror(errno), command_stderr, command);
+                     "error: command failed. exit status: '%d'\n"
+                     "stderr output: '%s'\n",
+                     command_exit_status, command_stderr);
             result = -1;
         }
     }
