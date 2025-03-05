@@ -76,11 +76,23 @@ Start by encrypting the library using packagetool:
 ```
 ./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject/YourLibrary/
 ```
-This will encrypt and package the library into `YouLibrary.mol` file. Now copy the `.impact` directory to the build directory:
+This will encrypt and package the library into `YouLibrary.mol` file. 
+
+Next step is to add a Modelon Impact specific project json file into the package.
+
+> [!IMPORTANT]  
+> The version information in the `project.json` file is used for tracking dependencies
+> of workspaces and compiled models. It needs to follow semantic version specification
+> (https://semver.org).
+> You MUST always update the project version when releasing the library to users. The project version
+> does not need to match Modelica library version.
+
+Copy the `.impact` directory to the build directory:
 ```
 cp -a /home/jovyan/impact/local_projects/YouLibraryProject/.impact .
 ```
-Adapt `build/.impact/project.json` file using a text editor to contain correct version information and skip any unneeded content sections, e.g.:
+Adapt `build/.impact/project.json` file using a text editor to contain correct version information and skip any unneeded content sections.
+You may also consider specifying project icon to be displayed in Workspace Management app, e.g.:
 ```
 {
   "name": "YourLibrary",
@@ -101,15 +113,10 @@ Adapt `build/.impact/project.json` file using a text editor to contain correct v
       "id": "b984a38211d34c8fab2901a242e963ef"
     }
   ],
-  "executionOptions": []
+  "executionOptions": [],
+  "icon": "YourLibrary/Resources/icon.png"
 }
 ```
-> [!IMPORTANT]  
-> The version information in the `project.json` file is used for tracking dependencies
-> of workspaces and compiled models. It needs to follow semantic version specification
-> (https://semver.org).
-> You MUST always update the project version when releasing the library to users. The project version
-> does not need to match Modelica library version.
 
 Add the updated .impact directory into the library package:
 ```
@@ -138,6 +145,35 @@ library.delete()
 ```
 
 If the compilation passes without issues your library is ready for distribution on Modelon Impact Cloud.
+
+## How to Update the License File
+
+Assuming provided build and packaging instructions were followed you will have a `build` subdirectory
+that contains a number of tools and your encrypted library *YourLibrary.mol* file.
+It is possible to update the license file in the library without updating the full package.
+
+To update the license file first extract the library package in a subdirectory:
+```
+unzip YourLibrary.mol -d YourLibrary/
+```
+You can now use the *decrypt_file* utility to restore the included license file:
+```
+./decrypt_file YourLibrary/YourLibrary/ license.moc license.mo
+```
+This will restore the original *license.mo* file in clear text. Use a text editor
+to modify the file to, e.g., add another user name to the list. After the update, use
+*encrypt_file* utility to encrypt the file again:
+```
+./encrypt_file license.mo license.moc YourLibrary/YourLibrary/
+```
+The newly generated license file will be placed in the library structure. It can be shared
+with customers. Alternatively, the file can be updated inside the *mol* file with the zip 
+utility. Note that zip utility requires temporary change of working directory:
+```
+pushd YourLibrary
+zip -ur ../YourLibrary.mol YourLibrary/license.moc 
+popd
+```
 
 ## How to Update JWT Keys from wellknown
 JWT keys are downloaded as a part of `setup.sh` run and can be updated by running:
