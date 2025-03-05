@@ -178,19 +178,19 @@ error:
 
 
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
- * Populates jwt_token with the token from handling the URL in the environment
- * variable MODELON_LICENSE_USER_JWT_URL Caller must free jwt_token
+ * Populates json_response with the token from handling the URL in the environment
+ * variable MODELON_LICENSE_USER_JWT_URL Caller must free json_response
  */
-static int mfl_jwt_url(char **jwt_token, char *error_msg_buffer)
+static int mfl_jwt_url(char **json_response, char *error_msg_buffer)
 {
     char *url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
     if (url_str == NULL) {
         return MFL_ERROR;
     } else if (strncmp(url_str, "file://", strlen("file://")) == 0) {
-        return mfl_jwt_url_file(jwt_token, error_msg_buffer);
+        return mfl_jwt_url_file(json_response, error_msg_buffer);
     } else if (strncmp(url_str, "http://", strlen("http://")) == 0 ||
                strncmp(url_str, "https://", strlen("https://")) == 0) {
-        return mfl_jwt_url_http_and_https(jwt_token, error_msg_buffer);
+        return mfl_jwt_url_http_and_https(json_response, error_msg_buffer);
     }
 
     const char *error_msg_start = NULL;
@@ -243,11 +243,12 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
     size_t out_capacity = 8192;
     char buffer[8192];
     char *buffer_p = buffer;
-    size_t bytes_read;
+    size_t bytes_read = 0;
 
     *out = (char *)malloc(out_capacity * sizeof(**out));
     if (*out == NULL) {
-        return 0;
+        out_sz = 0;
+        goto error;
     }
     while (
         (bytes_read = fread(buffer_p, sizeof(*buffer_p), sizeof(buffer), fp))) {
@@ -256,60 +257,77 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
             out_capacity = out_capacity * 2;
             *out = (char *)realloc(*out, out_capacity * sizeof(**out));
             if (*out == NULL) {
-                return 0;
+                out_sz = 0;
+                goto error;
             }
         }
         memcpy(*out, buffer, bytes_read);
     }
     (*out)[out_sz] = '\0';
+error:
     return out_sz;
 }
 
 static int mfl_jwt_url_file(char **jwt_token, char *error_msg_buffer)
 {
-    char *url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
+    int result = MFL_ERROR;
+    char *url_str = NULL;
+    char *file_path = NULL;
+    FILE *fp = NULL;
+    size_t bytes_read = -1;
+
+    url_str = getenv("MODELON_LICENSE_USER_JWT_URL");
     if (url_str == NULL) {
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    char *file_path = url_str + strlen("file://");
-    FILE *fp = fopen(file_path, "r");
+    file_path = url_str + strlen("file://");
+    fp = fopen(file_path, "r");
     if (fp == NULL) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE, "%s: %s",
                  file_path, strerror(errno));
         LOGE("%s\n", error_msg_buffer);
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    size_t bytes_read = mfl_jwt_util_read_file(jwt_token, fp, error_msg_buffer);
+    bytes_read = mfl_jwt_util_read_file(jwt_token, fp, error_msg_buffer);
     if (bytes_read == 0 || ferror(fp)) {
         _print_to_error_msg_buffer(
             error_msg_buffer, "error: could open but not read from file set in "
                               "environment variable MODELON_LICENSE_USER_JWT_URL");
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    return MFL_SUCCESS;
+    result = MFL_SUCCESS;
+error:
+    if (fp != NULL) {
+        fclose(fp);
+    }
+    return result;
 }
 
 
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
- * Populates jwt_token with the token in the environment variable
- * MODELON_LICENSE_USER_JWT Caller must free jwt_token
+ * Populates json_response with the token in the environment variable
+ * MODELON_LICENSE_USER_JWT Caller must free json_response
  */
-static int mfl_jwt_env_var(char **jwt_token)
+static int mfl_jwt_env_var(char **json_response)
 {
+    int result = MFL_ERROR;
     char *env_var = getenv("MODELON_LICENSE_USER_JWT");
     if (env_var == NULL) {
-        *jwt_token = malloc(1);
-        if (*jwt_token == NULL) {
-            return MFL_ERROR;
-        }
-        **jwt_token = '\0';
-        return MFL_ERROR;
+        result = MFL_ERROR;
+        goto error;
     }
-    *jwt_token = strdup(env_var);
-    if (*jwt_token == NULL) {
-        return MFL_ERROR;
+    *json_response = strdup(env_var);
+    if (*json_response == NULL) {
+        result = MFL_ERROR;
+        goto error;
     }
-    return MFL_SUCCESS;
+
+    result = MFL_SUCCESS;
+error:
+    return result;
 }
 
 /** Return MFL_SUCCESS on success, or MFL_ERROR on error.
@@ -322,17 +340,23 @@ static int mfl_jwt_get_token_from_any_jwt_env_var(char **jwt_token,
                                            char *error_msg_buffer)
 {
     int result = MFL_ERROR;
-    result = mfl_jwt_env_var(jwt_token);
-    if (result == MFL_SUCCESS) {
-        return result;
-    } else {
-        free(*jwt_token);
-        *jwt_token = NULL;
+    int status = MFL_ERROR;
+    char *json_response = NULL;
+
+    status = mfl_jwt_env_var(&json_response);
+    if (status != MFL_SUCCESS) {
+        status = mfl_jwt_url(&json_response, error_msg_buffer);
+        if (status != MFL_SUCCESS) {
+            result = status;
+            goto error;
+        }
     }
-    result = mfl_jwt_url(jwt_token, error_msg_buffer);
-    if (result == MFL_SUCCESS) {
-        return result;
-    }
+
+    mfl_jwt_get_entitlement_jwt_from_json_response(error_msg_buffer, jwt_token, json_response);
+
+    result = MFL_SUCCESS;
+error:
+    free(json_response);
     return result;
 }
 
