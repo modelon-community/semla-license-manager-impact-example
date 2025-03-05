@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# make sure we're not in a sparse checkout (cloud defaults to it)
+git sparse-checkout disable
+
 ARTIFACTS_URL=https://github.com/modelon-community/semla-license-manager-impact-example/releases/download/1.0.0-beta.1
 
 SEMLA_OPENSSL_ZIP=SemlaOpenSSL-1.1.0-linux64-gcc485.zip
