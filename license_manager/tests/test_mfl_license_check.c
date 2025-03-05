@@ -25,6 +25,41 @@
 
 #define TEST_REPORT_FN "report.xml"
 
+static int _decode_json(json_t **json, char *json_response)
+{
+    int result = MFL_ERROR;
+    int status;
+    char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+    char *jwt_token;
+    jwt_t *jwt = NULL;
+    char *returned_json = NULL;
+
+    status = mfl_jwt_get_entitlement_jwt_from_json_response(
+        error_msg_buffer, &jwt_token, json_response);
+    if (status == MFL_ERROR) {
+        ck_abort_msg(error_msg_buffer);
+    }
+
+    DECLARE_PUBLIC_KEY_JWT();
+    DECLARE_PUBLIC_KEY_JWT_LEN();
+    INITIALIZE_PUBLIC_KEY_JWT();
+    status = jwt_decode(&jwt, jwt_token,
+                        PUBLIC_KEY_JWT[UNIT_TEST_PUBLIC_KEY_JWT_KEY_INDEX],
+                        PUBLIC_KEY_JWT_LEN[UNIT_TEST_PUBLIC_KEY_JWT_KEY_INDEX]);
+    CLEAR_PUBLIC_KEY_JWT();
+    if (status != 0 || jwt == NULL) {
+        fprintf(stderr, "jwt_decode() failed\n");
+        goto error;
+    }
+    returned_json = jwt_get_grants_json(jwt, NULL);
+    *json = json_loads(returned_json, 0, NULL);
+    result = MFL_SUCCESS;
+error:
+    jwt_free(jwt);
+    free(returned_json);
+    return result;
+}
+
 static void _wrap_jwt_token_in_json_response(char **json_response,
                                              char *jwt_token)
 {
@@ -82,40 +117,6 @@ error:
     free(jwt_token);
     free(json_str);
     jwt_free(jwt);
-    return result;
-}
-static int _decode_json(json_t **json, char *json_response)
-{
-    int result = MFL_ERROR;
-    int status;
-    char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
-    char *jwt_token;
-    jwt_t *jwt = NULL;
-    char *returned_json = NULL;
-
-    status = mfl_jwt_get_entitlement_jwt_from_json_response(
-        error_msg_buffer, &jwt_token, json_response);
-    if (status == MFL_ERROR) {
-        ck_abort_msg(error_msg_buffer);
-    }
-
-    DECLARE_PUBLIC_KEY_JWT();
-    DECLARE_PUBLIC_KEY_JWT_LEN();
-    INITIALIZE_PUBLIC_KEY_JWT();
-    status = jwt_decode(&jwt, jwt_token,
-                        PUBLIC_KEY_JWT[UNIT_TEST_PUBLIC_KEY_JWT_KEY_INDEX],
-                        PUBLIC_KEY_JWT_LEN[UNIT_TEST_PUBLIC_KEY_JWT_KEY_INDEX]);
-    CLEAR_PUBLIC_KEY_JWT();
-    if (status != 0 || jwt == NULL) {
-        fprintf(stderr, "jwt_decode() failed\n");
-        goto error;
-    }
-    returned_json = jwt_get_grants_json(jwt, NULL);
-    *json = json_loads(returned_json, 0, NULL);
-    result = MFL_SUCCESS;
-error:
-    jwt_free(jwt);
-    free(returned_json);
     return result;
 }
 
