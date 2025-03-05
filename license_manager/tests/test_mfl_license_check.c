@@ -120,15 +120,16 @@ error:
     return result;
 }
 
-static int _encode_json_without_kid_header_claim(json_t *json, char **jwt_token)
+static int _encode_json_without_kid_header_claim(json_t *json, char **json_response)
 {
     int result = MFL_ERROR;
+    int status = MFL_ERROR;
     char *json_str;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    int status;
+    char *jwt_token;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
@@ -136,7 +137,7 @@ static int _encode_json_without_kid_header_claim(json_t *json, char **jwt_token)
         goto error;
     }
 
-    // No 'kid' header claim added here, cf. _encode_json()
+    // Difference with _encode_json() here: No 'kid' header claim is added.
 
     json_str = json_dumps(json, 0);
     ck_assert_ptr_ne(json_str, NULL);
@@ -151,30 +152,34 @@ static int _encode_json_without_kid_header_claim(json_t *json, char **jwt_token)
         fprintf(stderr, "jwt_set_alg() failed\n");
         goto error;
     }
-    *jwt_token = jwt_encode_str(jwt);
+    jwt_token = jwt_encode_str(jwt);
+    _wrap_jwt_token_in_json_response(json_response, jwt_token);
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
     free(json_str);
     jwt_free(jwt);
     return result;
 }
 
-static int _encode_json_with_nonexistent_kid(json_t *json, char **jwt_token)
+static int _encode_json_with_nonexistent_kid(json_t *json, char **json_response)
 {
     int result = MFL_ERROR;
+    int status = MFL_ERROR;
     char *json_str;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    int status;
+    char *jwt_token;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
         fprintf(stderr, "jwt_new() failed\n");
         goto error;
     }
-    // use a nonexistent kid "nonexistent-kid", cf. _encode_json()
+
+    // Difference with _encode_json() here: Use a nonexistent kid "nonexistent-kid".
     status = jwt_add_header(jwt, "kid", "nonexistent-kid");
     if (status != 0) {
         fprintf(stderr, "jwt_add_header() failed\n");
@@ -193,9 +198,11 @@ static int _encode_json_with_nonexistent_kid(json_t *json, char **jwt_token)
         fprintf(stderr, "jwt_set_alg() failed\n");
         goto error;
     }
-    *jwt_token = jwt_encode_str(jwt);
+    jwt_token = jwt_encode_str(jwt);
+    _wrap_jwt_token_in_json_response(json_response, jwt_token);
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
     free(json_str);
     jwt_free(jwt);
     return result;
