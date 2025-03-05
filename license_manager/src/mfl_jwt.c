@@ -54,7 +54,6 @@ int mfl_jwt_checkout_feature(mfl_module_data_t *module_data,
 {
     mfl_license_jwt_t *mfl = (mfl_license_jwt_t *)module_data;
     int status;
-    char *jwt_token = NULL;
     fflush(NULL);
     char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
     memset(error_msg_buffer, '\0', MFL_JWT_ERROR_MSG_BUFFER_SIZE);
@@ -62,12 +61,11 @@ int mfl_jwt_checkout_feature(mfl_module_data_t *module_data,
         return MFL_ERROR;
     }
     status =
-        mfl_jwt_component_license_check(feature, &jwt_token, error_msg_buffer);
+        mfl_jwt_component_license_check(feature, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
         // fflush(NULL);
     }
-    free(jwt_token);
     return status;
 }
 
@@ -422,11 +420,12 @@ error:
 }
 
 int mfl_jwt_component_license_check(const char *requested_feature,
-                                    char **jwt_token, char *error_msg_buffer)
+                                    char *error_msg_buffer)
 {
     int result = MFL_ERROR;
-    const char *FORMAT_VERSION = "1.0.0"; // The version of the token schema
     int status;
+    const char *FORMAT_VERSION = "1.0.0"; // The version of the token schema
+    char *jwt_token = NULL;
     jwt_t *jwt = NULL;
     jwt_valid_t *jwt_valid = NULL;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
@@ -463,13 +462,13 @@ int mfl_jwt_component_license_check(const char *requested_feature,
         goto error;
     }
     status =
-        mfl_jwt_get_token_from_any_jwt_env_var(jwt_token, error_msg_buffer);
+        mfl_jwt_get_token_from_any_jwt_env_var(&jwt_token, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
     }
     status =
-        _jwt_decode_using_compiled_in_key(&jwt, *jwt_token, error_msg_buffer);
+        _jwt_decode_using_compiled_in_key(&jwt, jwt_token, error_msg_buffer);
     if (status != 0 || jwt == NULL) {
         goto error;
     }
@@ -717,9 +716,12 @@ int mfl_jwt_component_license_check(const char *requested_feature,
 
     // check that the "user" object contains required_username
     {
-        mfl_jwt_license_file_get_required_user(&required_username, error_msg_buffer);
+        status = mfl_jwt_license_file_get_required_user(&required_username, error_msg_buffer);
+        if (status != MFL_SUCCESS) {
+            result = status;
+            goto error;
+        }
         user_object_json_str = jwt_get_grants_json(jwt, "user");
-
         if (user_object_json_str == NULL) {
             const char *error_msg_start = NULL;
             const char *error_msg_description_jwt = NULL;
@@ -899,6 +901,7 @@ int mfl_jwt_component_license_check(const char *requested_feature,
 
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
     json_decref(user_object_json);
     free(user_object_json_str);
     free(required_username);

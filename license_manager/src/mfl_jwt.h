@@ -35,11 +35,10 @@ int mfl_jwt_check_any_jwt_env_var_set();
 /**
  * @brief  Component license check. The license check will pass if the JWT is valid and “features” list contains the requested feature. 
  * @param requested_feature 
- * @param jwt_token 
  * @param error_msg_buffer 
  * @return MFL_SUCCESS if the license check is passed, MFL_ERROR otherwise.
  */
-int mfl_jwt_component_license_check(const char *requested_feature, char **jwt_token,
+int mfl_jwt_component_license_check(const char *requested_feature,
                                     char *error_msg_buffer);
 
 // private
