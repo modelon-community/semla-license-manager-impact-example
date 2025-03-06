@@ -311,6 +311,7 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
                 out_sz = 0;
                 goto error;
             }
+            out_p = *out - (out_sz - bytes_read);
         }
         memcpy(out_p, buffer, bytes_read);
         out_p += bytes_read;
