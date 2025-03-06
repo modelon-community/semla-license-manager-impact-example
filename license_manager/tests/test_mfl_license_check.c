@@ -400,9 +400,8 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MFL_SSL_NO_VERIFY", "1", 1);
         // feature to check out from the 'features' list in the json above
         requested_feature_existant = "Feature1";
-        expected_error_message_start = "error: command failed";
-        status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+        expected_error_message_start = "curl call failed: Couldn't connect to server";
+        status = mfl_jwt_component_license_check(requested_feature_existant, required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);

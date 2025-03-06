@@ -4,7 +4,8 @@
  * NOTE: Thirdparty dependency on OpenSSL, add attribution, see https://www.openssl.org/source/license.html
  * Platform-specific dependencies of OpenSSL need to be dynamically linked. On linux, these are 'dl' and 'pthread'
  * 
- * NOTE: Thirdparty dependency on curl, add attribution, see https://curl.se/docs/copyright.html
+ * NOTE: Thirdparty dependency on libcurl, add attribution, see https://curl.se/docs/copyright.html
+ * libcurl needs to be dynamically linked.
  */
 
 

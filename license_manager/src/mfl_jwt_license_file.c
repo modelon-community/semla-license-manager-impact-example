@@ -11,7 +11,6 @@
 #include "mfl_jwt.h"
 #include "mfl_jwt_license_file.h"
 #include "mfl_jwt_license_file_decrypt_file.h"
-#include "mfl_jwt_util.h"
 
 #define STR2(x) #x
 #define STR(x) STR2(x)

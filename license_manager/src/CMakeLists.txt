@@ -13,7 +13,6 @@ add_library(license_manager
     ${CMAKE_CURRENT_LIST_DIR}/mfl_jwt_curl.c
     ${CMAKE_CURRENT_LIST_DIR}/mfl_jwt_license_file.c
     ${CMAKE_CURRENT_LIST_DIR}/mfl_jwt_license_file_decrypt_file.c
-    ${CMAKE_CURRENT_LIST_DIR}/mfl_jwt_util.c
     ${LICENSE_MANAGER_COMMON_SRC}/lmc_feature.c
 )
 
@@ -27,8 +26,11 @@ target_compile_definitions(license_manager PRIVATE MFL_JWT_LICENSE_FILE_FILENAME
 
 include(${CMAKE_CURRENT_LIST_DIR}/../jansson/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../libjwt/CMakeLists.txt)
+include(${CMAKE_CURRENT_LIST_DIR}/../libcurl/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../public_key_jwt/CMakeLists.txt)
 
-target_link_libraries(license_manager decryptor mlle_common jwt jansson ${ssl_libs} ${extra_ssl_libs})
+target_link_libraries(license_manager decryptor mlle_common jwt jansson  ${ssl_libs} ${extra_ssl_libs} ${CURL_LIBRARY})
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,--exclude-libs,ALL")
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../tests ${CMAKE_CURRENT_BINARY_DIR}/tests)

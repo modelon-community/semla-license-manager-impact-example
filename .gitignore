@@ -3,6 +3,7 @@
 /jansson*.zip
 /SemlaOpenSSL*.zip
 /SemlaLibJWT*.zip
+/curl*.zip
 /jwk2key
 /impact_public_key_tool.pem
 /jwks.json

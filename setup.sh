@@ -1,6 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPTFILE=$(readlink -f "${BASH_SOURCE[0]}")
+SCRIPTDIR=$(dirname "$SCRIPTFILE")
+DIRBASENAME=$(basename "$SCRIPTDIR")
+
+[ $DIRBASENAME == "semla-license-manager-impact-example" ] || \
+    ( echo "WARNING: for devcontainer to work this checkout must be in a directory called 'semla-license-manager-impact-example' (not $DIRBASENAME). See README.md")
+    
 # make sure we're not in a sparse checkout (cloud defaults to it)
 git sparse-checkout disable
 
@@ -20,6 +27,13 @@ do
     fi
 done
 chmod +x ${JWK2KEY}
+
+CURL_RELEASE=curl-7_61_1.zip
+if [ ! -f ${CURL_RELEASE} ]; then
+    echo Downloading ${CURL_RELEASE}
+    curl -LO https://github.com/curl/curl/archive/refs/tags/${CURL_RELEASE}
+fi
+
 
 if [ ! -d ../SEMLA ]; then
     echo "Cloning SEMLA to ../SEMLA"
