@@ -42,7 +42,7 @@ semla-license-manager-impact-example/    # (this directory)
 ```
 
 ## Create a license file
-The example uses a text file called `license.mo` placed in the top level directory of the library. It is possible to 
+The example uses a text file called `license.mo` placed in the top level directory of the library next to the 'package.mo'-file. It is possible to 
 configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json).
 
 The license file in this example is expected to have one line per username for the users to be licensed, e.g.,
@@ -55,28 +55,27 @@ end license;
 ```
 
 ## How to build
-Three build scripts are included:
+In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
 
-- `build.sh` only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
-- `build-debug.sh` builds debug configuration as necessary for running the debugger (gdb) and all tests. 
+For debugging reasons use `./build-debug.sh`. This script builds debug configuration as necessary for running the debugger (gdb) and all tests. 
    Building tests requires additional library (https://libcheck.github.io/check/ ) which is 
    automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a 
    CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
 
 ## How to Encrypt a Library
-Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that.
-
 The commands below can be run from the *build* directory created when running `build.sh` as described above. The examples assume running on https://impact.modelon.cloud. For a local setup you may need to adapt the path.
 
 ```
 cd build
 ```
 
+Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that. In this case the opened tab has an ending like 'folder=/home/jovyan/impact/local_projects/YourLibraryProject'. Copy the path after folder and add the folder name 'YourLibrary'.
+
 Start by encrypting the library using packagetool:
 ```
 ./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject/YourLibrary/
 ```
-This will encrypt and package the library into `YouLibrary.mol` file. 
+This will encrypt and package the library into `YouLibrary.mol` file. If necessary, you can download this file from the build folder. 
 
 Next step is to add a Modelon Impact specific project json file into the package.
 
