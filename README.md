@@ -55,15 +55,22 @@ end license;
 ```
 
 ## How to build
-In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
+Two build scripts are included. In the default case you can simply run `./build.sh`. This only builds a release version
+of the LVE and supporting tools. This is enough for using the example as is.
 
-For debugging reasons use `./build-debug.sh`. This script builds debug configuration as necessary for running the debugger (gdb) and all tests. 
-   Building tests requires additional library (https://libcheck.github.io/check/ ) which is 
-   automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a 
-   CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
+For debugging purposes use `./build-debug.sh`. This script builds debug configuration as necessary for running the 
+debugger (gdb) and all tests. Building tests requires additional library (https://libcheck.github.io/check/ ) which is 
+automatically installed in dev container. Tests can be run with `./run.sh` which uses `ctest` configured with a 
+CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
 
-## How to Encrypt a Library
-The commands below can be run from the *build* directory created when running `build.sh` as described above. The examples assume running on https://impact.modelon.cloud. For a local setup you may need to adapt the path.
+## How to Encrypt and Package a Library
+
+Packaging a Modelon Impact library requires following steps that are further detailed below:
+- Encrypt the pure Modelica libary.
+- Add Modelon Impact specific content into the mol file.
+
+The commands below can be run from the *build* directory created when running `build.sh` as described above. 
+The examples assume running on https://impact.modelon.cloud. For a local setup you may need to adapt the path.
 
 ```
 cd build
@@ -121,6 +128,8 @@ Add the updated .impact directory into the library package:
 ```
 zip -ur YourLibrary.mol .impact
 ```
+If needed, additional non-encrypted content, such as Python files or other resources, 
+can be added to the *mol* file using the *zip* utility in a similar way.
 
 If running on https://impact.modelon.cloud and assuming you have added your
 own username to the license file you may test the encryption and licensing by using Modelon Impact Python client, e.g., from a Jupyter notebook:
