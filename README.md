@@ -132,8 +132,8 @@ new_library_file = "/home/jovyan/impact/local_projects/Semla-license-manager-imp
 library = workspace.import_dependency_from_zip(new_library_file).wait()
 
 # compile a test model
-model = w.get_model("YourLibrary.Example.SomeModel")
-dynamic = w.get_custom_function('dynamic')
+model = workspace.get_model("YourLibrary.Example.SomeModel")
+dynamic = workspace.get_custom_function('dynamic')
 compiler_options = dynamic.get_compiler_options()
 fmu = model.compile(compiler_options=compiler_options, compiler_log_level="info").wait()
 print(fmu.get_log())
