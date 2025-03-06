@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -16,9 +17,7 @@ typedef void* mfl_module_data_t;
 struct mfl_license {
     char *latest_error;
     char init_error[1000];
-    char *server_ip;
-    char *customer_host_id;
-    char *server_rights_id;
+    char *libpath;
 
     /* Module data for submodules. */
     mfl_module_data_t *module_data;
@@ -34,7 +33,7 @@ struct mfl_license {
 // Private function heads
 // -------------------------------------------------------------------------
 static void free_mfl_error(mfl_license_t *mfl);
-static int setup_jwt(mfl_license_t *mfl);
+static int setup_jwt(mfl_license_t *mfl, char *libpath);
 
 // -------------------------------------------------------------------------
 // Implementation
@@ -48,13 +47,13 @@ mfl_license_t * mfl_license_new()
     return mfl_license;
 }
 
-int mfl_initialize(mfl_license_t *mfl)
+int mfl_initialize(mfl_license_t *mfl, char *libpath)
 {
     int status            = MFL_SUCCESS;
 
     if (mfl_jwt_check_any_jwt_env_var_set() == MFL_SUCCESS) {
         LOGE("*** Using MFL JWT ***\n")
-        status = setup_jwt(mfl);
+        status = setup_jwt(mfl, libpath);
     }
     else {
         LOGE("error: need to set one of the environment variables MODELON_LICENSE_USER_JWT or MODELON_LICENSE_USER_JWT_URL\n")
@@ -75,22 +74,14 @@ int mfl_license_free(mfl_license_t *mfl)
         mfl->free(mfl->module_data);
     }
 
-    free_mfl_error(mfl);
-
-    if (mfl->server_ip) {
-        free(mfl->server_ip);
+    if (mfl->libpath) {
+        free(mfl->libpath);
     }
+
+    free_mfl_error(mfl);
 
     if (mfl->latest_error != mfl->init_error) {
         free(mfl->latest_error);
-    }
-
-    if (mfl->customer_host_id) {
-        free(mfl->customer_host_id);
-    }
-
-    if (mfl->server_rights_id) {
-        free(mfl->server_rights_id);
     }
 
     free(mfl);
@@ -149,12 +140,12 @@ static void free_mfl_error(mfl_license_t *mfl) {
     }
 }
 
-static int setup_jwt(mfl_license_t *mfl) {
+static int setup_jwt(mfl_license_t *mfl, char *libpath) {
     mfl->module_data      = (mfl_module_data_t *) mfl_jwt_license_new();
     mfl->free             = mfl_jwt_license_free;
     mfl->checkout_feature = mfl_jwt_checkout_feature;
     mfl->checkin_feature  = mfl_jwt_checkin_feature;
     mfl->get_last_error   = mfl_jwt_last_error;
 
-    return mfl_jwt_initialize(mfl->module_data);
+    return mfl_jwt_initialize(mfl->module_data, libpath);
 }

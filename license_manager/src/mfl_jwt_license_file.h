@@ -6,11 +6,13 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
- * @param required_user contains the required user from the license file
- * @return MFL_SUCCESS on success, or MFL_ERROR on failure. required_user. Caller
- * must free() required_user.
+ * @param required_usernames contains the required user from the license file separated by '\n'
+ * @return MFL_SUCCESS on success, or MFL_ERROR on failure. required_usernames. Caller
+ * must free() required_usernames.
  */
-int mfl_jwt_license_file_get_required_user(char **required_user, char *error_msg_buffer);
+int mfl_jwt_license_file_get_required_usernames(char **required_usernames,
+                                                char *libpath,
+                                                char *error_msg_buffer);
 
 #ifdef __cplusplus
 }

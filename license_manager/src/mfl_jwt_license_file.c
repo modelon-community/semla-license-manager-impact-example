@@ -16,28 +16,18 @@
 #define STR(x) STR2(x)
 
 static int mfl_jwt_license_file_get_decrypted_license_file_contents(
-    char **decrypted_license_file_contents, char *error_msg_buffer)
+    char **decrypted_license_file_contents, char* libpath, char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
     FILE *fp = NULL;
     char *license_file_path = NULL;
-    char *HOME = NULL;
     size_t bytes_read = 0;
     char *encrypted_license_file_contents = NULL;
 
-    HOME = getenv("HOME");
-    if (HOME == NULL) {
-        result = MFL_ERROR;
-        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-                 "error: could not open license file '${HOME}/%s': environment "
-                 "variable HOME is not set",
-                 STR(MFL_JWT_LICENSE_FILE_FILENAME));
-        goto error;
-    }
     status =
         mfl_jwt_util_asprintf(error_msg_buffer, &license_file_path, "%s/%s",
-                              HOME, STR(MFL_JWT_LICENSE_FILE_FILENAME));
+                              libpath, STR(MFL_JWT_LICENSE_FILE_FILENAME));
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
@@ -75,22 +65,118 @@ error:
     return result;
 }
 
-int mfl_jwt_license_file_get_required_user(char **required_user,
-                                           char *error_msg_buffer)
+
+/** Populates required_usernames from decrypted_license_file_contents.
+ * 
+ * All lines that contain a '@' are considered a username.
+ * Filters out all lines that are not usernames.
+ * Ensures that the only separator between usernames is '\n'
+ * (i.e. replaces Windows and Mac line endings with Unix line endings)
+ * 
+ * @param required_usernames contains the required users from the license file separated by '\n'
+ * @param decrypted_license_file_contents contains the decrypted license file contents
+ * @return MFL_SUCCESS on success, or MFL_ERROR on failure. required_usernames. Caller
+ * must free() required_usernames.
+ */
+static int mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_contents(
+        char **required_usernames, char *decrypted_license_file_contents, char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
+    size_t required_usernames_sz = 0;
+    size_t required_usernames_capacity = 8192;
+    char *line_start = decrypted_license_file_contents;
+    char *line_end = NULL;
+    char *at_sign = NULL;
+    size_t bytes_read = -1;
+    int i = 0;
 
-    // TODO temporarily hardcode required_user to make the tests pass without using a license file
-    *required_user = malloc((strlen("example.email@example.com")+1)*sizeof(char));
-    sprintf(*required_user, "example.email@example.com");
+    *required_usernames = (char *)malloc(required_usernames_capacity * sizeof(**required_usernames));
+    if (*required_usernames == NULL) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: Could not allocate "
+                 "memory for output buffer required_usernames");
+        result = MFL_ERROR;
+        goto error;
+    }
+
+    do {
+        // Only copy lines that contain a '@'
+        if (at_sign < line_start) {
+            at_sign = strchr(line_start, '@');
+            if(at_sign == NULL) {
+                // If there are no more lines with a '@' left,
+                // then we are done.
+                break;
+            }
+        }
+
+        // Find the line ending
+        line_end = strchr(line_start, '\r');
+        if(line_end == NULL) {
+            line_end = strchr(line_start, '\n');
+            if(line_end == NULL) {
+                line_end = strchr(line_start, '\0');
+            }
+        }
+
+        // Copy the line if it contains a '@'
+        if (at_sign < line_end) {
+            bytes_read = (line_end - line_start) * sizeof(*line_start);
+            required_usernames_sz += bytes_read;
+            // Reallocate output buffer if it is too small
+            if (required_usernames_sz >= required_usernames_capacity) {
+                required_usernames_capacity = required_usernames_capacity * 2;
+                *required_usernames = (char *)realloc(*required_usernames, required_usernames_capacity * sizeof(**required_usernames));
+                if (*required_usernames == NULL) {
+                    required_usernames_sz = 0;
+                    snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                            "error: Could not allocate "
+                            "memory for output buffer required_usernames");
+                    goto error;
+                }
+            }
+            memcpy(*required_usernames, line_start, bytes_read);
+            // Fix the line endings in the output buffer, we only want to output Unix line endings (\n)
+            if (*line_end == '\r') {
+                char *line_end_in_required_usernames = line_start + bytes_read;
+                char *line_end_plus_one = line_end + 1 * sizeof(*line_start);
+                // replace Windows (\r\n) and Mac (\r) line endings with Unix line endings (\n)
+                *line_end_in_required_usernames  = '\n';
+                // fast-forward to the '\n' in Windows line endings
+                if (*line_end_plus_one == '\n') {
+                    line_end = line_end_plus_one;
+                }
+            }
+        }
+        line_start = line_end + 1;
+        i++;
+    } while (*line_end != '\0');
+    (*required_usernames)[required_usernames_sz] = '\0';
+
     result = MFL_SUCCESS;
+error:
     return result;
+}
 
-    // license file only contains required_user (for now) so we pass this in as
-    // the output buffer directly
+
+int mfl_jwt_license_file_get_required_usernames(char **required_usernames,
+                                                char *libpath,
+                                                char *error_msg_buffer)
+{
+    int result = MFL_ERROR;
+    int status = MFL_ERROR;
+    char *decrypted_license_file_contents;
+
     status = mfl_jwt_license_file_get_decrypted_license_file_contents(
-        required_user, error_msg_buffer);
+        &decrypted_license_file_contents, libpath, error_msg_buffer);
+    if (status != MFL_SUCCESS) {
+        result = status;
+        goto error;
+    }
+
+    status = mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_contents(
+        required_usernames, decrypted_license_file_contents, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
@@ -98,5 +184,6 @@ int mfl_jwt_license_file_get_required_user(char **required_user,
 
     result = MFL_SUCCESS;
 error:
+    free(decrypted_license_file_contents);
     return result;
 }
