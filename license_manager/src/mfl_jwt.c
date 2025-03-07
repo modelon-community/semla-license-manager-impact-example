@@ -477,34 +477,52 @@ error:
 static int mfl_jwt_check_username_in_required_usernames(char *username, char *required_usernames, char *error_msg_buffer)
 {
     int result = MFL_ERROR;
-    char *required_username = "example.email@example.com"; //TODO add loop over required_usernames
-    if (!strcmp(username, required_username) == 0) {
-        char *error_msg_buffer_current_position = error_msg_buffer;
-        size_t error_msg_buffer_remaining_size =
-            MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        const char *error_msg_start = NULL;
-        const char *error_msg_middle = NULL;
-        const char *error_msg_description_jwt = NULL;
-        char *jwt_dump_str_result = NULL;
-        const char *error_msg_description_end = NULL;
-        char error_msg_input_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
-        size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
-        error_msg_start =
-            "error: User '%s' is not licensed to use this library."
-            "The users that are licensed to use this library are:\n%s";
-        snprintf(error_msg_input_buffer, error_msg_input_buffer_sz,
-                    error_msg_start, username, required_usernames);
-        error_msg_description_end = "\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_description_end);
-        LOGE("%s\n", error_msg_buffer);
+    int status = MFL_ERROR;
+    int found_username = MFL_ERROR;
+    char *required_username = NULL;
+    char *line_start = NULL;
+    char *line_end = NULL;
+    size_t bytes_read = -1;
+    char *required_usernames_dup = NULL;
+
+    // Only modify a copy of the input required_usernames, instead of modifying the input itself
+    required_usernames_dup = strdup(required_usernames);
+    if (required_usernames_dup == NULL) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: Could not allocate "
+                 "memory for required_usernames_dup");
+        result = MFL_ERROR;
         goto error;
     }
+    line_start = required_usernames_dup;
+    // Find username in required_usernames (dup)
+    do {
+        // Find the line ending
+        line_end = strchr(line_start, '\n');
+        if(line_end == NULL) {
+            line_end = strchr(line_start, '\0');
+        }
+        *line_end = '\0'; // update the line ending to '\0' so that we can use strcmp()
 
-    result = MFL_SUCCESS;
+        required_username = line_start; 
+        if(strcmp(username, required_username) == 0) {
+            found_username = MFL_SUCCESS;
+        }
+        
+        line_start = line_end + 1;
+    } while (!((*line_end == '\0') || (found_username == MFL_SUCCESS)));
+    status = found_username;
+    if (status != MFL_SUCCESS) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+            "error: User '%s' is not licensed to use this library."
+            "The users that are licensed to use this library are:\n%s",
+            username, required_usernames);
+        result = status;
+        goto error;
+    }
+    result = status;
 error:
+    free(required_usernames_dup);
     return result;
 }
 
@@ -930,7 +948,7 @@ int mfl_jwt_component_license_check(const char *requested_feature,
             LOGE("%s\n", error_msg_buffer);
             goto error;
         }
-        
+
         status = mfl_jwt_check_username_in_required_usernames(username, required_usernames, error_msg_buffer);
         if (status != MFL_SUCCESS) {
             result = status;

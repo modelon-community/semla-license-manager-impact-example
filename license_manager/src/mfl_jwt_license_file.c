@@ -91,7 +91,6 @@ static int mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_lic
     char *line_end = NULL;
     char *at_sign = NULL;
     size_t bytes_read = -1;
-    int i = 0;
 
     *required_usernames = (char *)malloc(required_usernames_capacity * sizeof(**required_usernames));
     if (*required_usernames == NULL) {
@@ -152,7 +151,6 @@ static int mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_lic
             }
         }
         line_start = line_end + 1;
-        i++;
     } while (*line_end != '\0');
     (*required_usernames)[required_usernames_sz] = '\0';
 
