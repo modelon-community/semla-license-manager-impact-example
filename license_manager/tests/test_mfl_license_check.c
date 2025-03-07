@@ -1143,6 +1143,60 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         free(actual_error_message_start);
     }
 
+    // test "error: User '%s' is not licensed to use this library."
+    {
+        char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+        char jsonbuf[1024];
+        json_t *json;
+        char *jwt_token;
+        const char *expected_error_message_start;
+        char *actual_error_message_start;
+        mfl_jwt_unsetenv_any_jwt_env_var();
+        // Keep json alphabetically sorted and no newlines for easy comparison.
+        sprintf(
+            jsonbuf,
+            "{"
+            // expiration time
+            "\"exp\":%ld,"
+            "\"features\":["
+            "\"Feature1\","
+            "\"Feature2\""
+            "],"
+            "\"format_version\":\"1.0.0\","
+            // issued at (unused by jwt_validate())
+            "\"iat\":%ld,"
+            // not before
+            "\"nbf\":%ld,"
+            "\"user\": {"
+            "\"id\": \"example-id\","
+            "\"username\": \"notlicensed.user@example.com\"" // <--- this user
+                                                             // is not licensed
+                                                             // to use this
+                                                             // library
+            "}"
+            "}",
+            exp, iat, nbf);
+        json = json_loads(jsonbuf, 0, NULL);
+        ck_assert_ptr_ne(json, NULL);
+        status = _encode_json(json, &jwt_token);
+        ck_assert_int_eq(status, MFL_SUCCESS);
+        setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
+        expected_error_message_start =
+            "error: User 'notlicensed.user@example.com' is not licensed to use "
+            "this library.The users that are licensed to use this library "
+            "are:\nexample.email@example.com";
+        status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
+                                                 error_msg_buffer);
+        ck_assert_int_eq(status, MFL_ERROR);
+        ck_assert_ptr_ne(error_msg_buffer, NULL);
+        actual_error_message_start =
+            strndup(error_msg_buffer, strlen(expected_error_message_start));
+        ck_assert_str_eq(actual_error_message_start,
+                         expected_error_message_start);
+        free(actual_error_message_start);
+    }
+
     mfl_jwt_unsetenv_any_jwt_env_var();
 }
 END_TEST
