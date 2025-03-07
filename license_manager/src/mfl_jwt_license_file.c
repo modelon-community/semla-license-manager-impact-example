@@ -168,7 +168,7 @@ int mfl_jwt_license_file_get_required_usernames(char **required_usernames,
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
-    char *decrypted_license_file_contents;
+    char *decrypted_license_file_contents = NULL;
 
     status = mfl_jwt_license_file_get_decrypted_license_file_contents(
         &decrypted_license_file_contents, libpath, error_msg_buffer);
