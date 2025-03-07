@@ -63,10 +63,7 @@ int mfl_jwt_license_file_decrypt_file(char *error_msg_buffer,
     OPENSSL_config(NULL);
 
     /* Decrypt file. */
-    // We can use the same license file for several libraries with the same LVE
-    // (setting rel_file_path to NULL means the same thing as setting
-    // DISABLE_DEMASK_KEY)
-    bytes = mlle_cr_decrypt(context, NULL, encrypted_license_file_contents,
+    bytes = mlle_cr_decrypt(context, basedir, encrypted_license_file_contents,
                             encrypted_license_file_contents_sz,
                             *decrypted_license_file_contents);
     if (bytes < 0) {
