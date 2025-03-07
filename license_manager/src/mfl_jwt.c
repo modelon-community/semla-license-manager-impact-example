@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -506,11 +507,12 @@ static int mfl_jwt_check_username_in_required_usernames(
         if (line_end == NULL) {
             line_end = strchr(line_start, '\0');
         }
-        *line_end =
-            '\0'; // update the line ending to '\0' so that we can use strcmp()
+        *line_end = '\0'; // update the line ending to '\0' so that we can use
+                          // string comparison
 
         required_username = line_start;
-        if (strcmp(username, required_username) == 0) {
+        // use case insensitive string comparison for the username
+        if (strcasecmp(username, required_username) == 0) {
             found_username = MFL_SUCCESS;
         }
 
