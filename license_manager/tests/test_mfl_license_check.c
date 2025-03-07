@@ -477,9 +477,10 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     }
 
     // test using mfl_interface
-    // Also: test with a license file with several users. Covers both the code
-    // that parses the license file and the code that finds the user from the
-    // jwt in the list of users from the license file.
+    // Also: test with a license file with several users, and with {Windows,
+    // Mac, Unix} line endings. Covers both the code that parses the license
+    // file and the code that finds the user from the jwt in the list of users
+    // from the license file.
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         mfl_jwt_unsetenv_any_jwt_env_var();
@@ -517,8 +518,8 @@ START_TEST(test_mfl_jwt_checkout_checkin)
                 "model license\n"
                 "/*\n"
                 "other.user1@example.com\n"
-                "%s\n"
-                "other.user2@example.com\n"
+                "%s\r\n"                    // <--- Windows line ending
+                "other.user2@example.com\r" // <-- Mac line ending
                 "*/\n"
                 "end license;\n",
                 required_users_existant);
@@ -542,10 +543,10 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         ck_assert_ptr_ne(encrypted_package_mo_filename_original, NULL);
         encrypted_package_mo_filename =
             basename(encrypted_package_mo_filename_original);
-        bytes_written =
-            asprintf(&encrypt_package_mo_command, "../../../encrypt_file %s %s %s",
-                     decrypted_package_mo_path, encrypted_package_mo_filename,
-                     library_path);
+        bytes_written = asprintf(&encrypt_package_mo_command,
+                                 "../../../encrypt_file %s %s %s",
+                                 decrypted_package_mo_path,
+                                 encrypted_package_mo_filename, library_path);
         ck_assert_int_ge(bytes_written, 0);
         status = system(encrypt_package_mo_command);
         ck_assert_int_eq(status, 0);
@@ -565,10 +566,10 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         encrypted_license_file_filename =
             basename(encrypted_license_file_filename_original);
         ck_assert_int_ge(bytes_written, 0);
-        bytes_written =
-            asprintf(&encrypt_license_file_command,
-                     "../../../encrypt_file %s %s %s", decrypted_license_file_path,
-                     encrypted_license_file_filename, library_path);
+        bytes_written = asprintf(&encrypt_license_file_command,
+                                 "../../../encrypt_file %s %s %s",
+                                 decrypted_license_file_path,
+                                 encrypted_license_file_filename, library_path);
         ck_assert_int_ge(bytes_written, 0);
         status = system(encrypt_license_file_command);
         ck_assert_int_eq(status, 0);
