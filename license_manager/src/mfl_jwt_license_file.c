@@ -22,6 +22,7 @@ static int mfl_jwt_license_file_get_decrypted_license_file_contents(
     int result = MFL_ERROR;
     int status = MFL_ERROR;
     FILE *fp = NULL;
+    char *license_file_relative_path = NULL;
     char *license_file_path = NULL;
     size_t bytes_read = 0;
     char *encrypted_license_file_contents = NULL;
@@ -29,8 +30,15 @@ static int mfl_jwt_license_file_get_decrypted_license_file_contents(
     // license file has the file extension .mo when it is not encrypted and
     // has the file extension .moc after it is encrypted by packagetool
     status =
-        mfl_jwt_util_asprintf(error_msg_buffer, &license_file_path, "%s/%sc",
-                              libpath, STR(MFL_JWT_LICENSE_FILE_FILENAME));
+        mfl_jwt_util_asprintf(error_msg_buffer, &license_file_relative_path, "%sc",
+                              STR(MFL_JWT_LICENSE_FILE_FILENAME));
+    if (status != MFL_SUCCESS) {
+        result = status;
+        goto error;
+    }
+    status =
+        mfl_jwt_util_asprintf(error_msg_buffer, &license_file_path, "%s/%s",
+                              libpath, license_file_relative_path);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
@@ -54,7 +62,7 @@ static int mfl_jwt_license_file_get_decrypted_license_file_contents(
     }
 
     status = mfl_jwt_license_file_decrypt_file(
-        error_msg_buffer, license_file_path, encrypted_license_file_contents,
+        error_msg_buffer, libpath, license_file_relative_path, encrypted_license_file_contents,
         bytes_read, decrypted_license_file_contents);
     if (status != MFL_SUCCESS) {
         result = status;
@@ -63,6 +71,7 @@ static int mfl_jwt_license_file_get_decrypted_license_file_contents(
 
     result = MFL_SUCCESS;
 error:
+    free(license_file_relative_path);
     free(encrypted_license_file_contents);
     free(license_file_path);
     return result;

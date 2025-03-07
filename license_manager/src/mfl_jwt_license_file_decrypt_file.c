@@ -19,15 +19,13 @@
 #include "mfl_interface.h"
 #include "mfl_jwt.h"
 
-int mfl_jwt_license_file_decrypt_file(char *error_msg_buffer,
-                                      char *license_file_path,
+int mfl_jwt_license_file_decrypt_file(char *error_msg_buffer, char *libpath,
+                                      char *license_file_relative_path,
                                       char *encrypted_license_file_contents,
                                       size_t encrypted_license_file_contents_sz,
                                       char **decrypted_license_file_contents)
 {
     /* This function is derived from SEMLA decrypt_file.c */
-
-    char *basedir = NULL;
 
     int result = MFL_ERROR;
     int bytes = -1;
@@ -41,18 +39,17 @@ int mfl_jwt_license_file_decrypt_file(char *error_msg_buffer,
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
                  "error: when decrypting license file '%s': Could not allocate "
                  "memory for output buffer",
-                 license_file_path);
+                 license_file_relative_path);
         result = MFL_ERROR;
         goto error;
     }
 
-    basedir = dirname(license_file_path);
-    context = mlle_cr_create(basedir);
+    context = mlle_cr_create(libpath);
     if (context == NULL) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
                  "error: when decrypting license file '%s': Could not create "
                  "decryption context object",
-                 license_file_path);
+                 license_file_relative_path);
         result = MFL_ERROR;
         goto error2;
     }
@@ -63,12 +60,13 @@ int mfl_jwt_license_file_decrypt_file(char *error_msg_buffer,
     OPENSSL_config(NULL);
 
     /* Decrypt file. */
-    bytes = mlle_cr_decrypt(context, basedir, encrypted_license_file_contents,
-                            encrypted_license_file_contents_sz,
-                            *decrypted_license_file_contents);
+    bytes = mlle_cr_decrypt(
+        context, license_file_relative_path, encrypted_license_file_contents,
+        encrypted_license_file_contents_sz, *decrypted_license_file_contents);
     if (bytes < 0) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-                 "error: decryption failed for file: '%s'", license_file_path);
+                 "error: decryption failed for file: '%s'",
+                 license_file_relative_path);
         result = MFL_ERROR;
         goto error3;
     }
