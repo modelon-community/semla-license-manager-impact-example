@@ -585,11 +585,14 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         ck_assert_ptr_ne(mfl, NULL);
         status = mfl_initialize(mfl, library_path);
         if (status != MFL_SUCCESS) {
-            fprintf(stderr, "%s\n", mfl_last_error(mfl));
+            ck_abort_msg(mfl_last_error(mfl));
         }
         ck_assert_int_eq(status, MFL_SUCCESS);
         status = mfl_checkout_feature(mfl, requested_feature_existant, version,
                                       num_lic);
+        if (status != MFL_SUCCESS) {
+            ck_abort_msg(mfl_last_error(mfl));
+        }
         ck_assert_int_eq(status, MFL_SUCCESS);
         status = mfl_checkin_feature(mfl, requested_feature_existant);
         ck_assert_int_eq(status, MFL_SUCCESS);
