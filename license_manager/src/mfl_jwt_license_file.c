@@ -106,6 +106,8 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
     char *line_end = NULL;
     char *at_sign = NULL;
     size_t bytes_read = -1;
+    char *required_usernames_p = NULL;
+    char *line_end_in_required_usernames = NULL;
 
     *required_usernames = (char *)malloc(required_usernames_capacity *
                                          sizeof(**required_usernames));
@@ -117,6 +119,7 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
         goto error;
     }
 
+    required_usernames_p = *required_usernames;
     do {
         // Only copy lines that contain a '@'
         if (at_sign < line_start) {
@@ -139,7 +142,8 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
 
         // Copy the line if it contains a '@'
         if (at_sign < line_end) {
-            bytes_read = (line_end - line_start) * sizeof(*line_start);
+            // bytes_read also includes the line ending itself
+            bytes_read = line_end - line_start + 1;
             required_usernames_sz += bytes_read;
             // Reallocate output buffer if it is too small
             if (required_usernames_sz >= required_usernames_capacity) {
@@ -153,25 +157,42 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
                              "memory for output buffer required_usernames");
                     goto error;
                 }
+                required_usernames_p =
+                    *required_usernames + (required_usernames_sz - bytes_read);
             }
-            memcpy(*required_usernames, line_start, bytes_read);
+            memcpy(required_usernames_p, line_start, bytes_read);
+            // (bytes_read also includes the line ending itself)
+            line_end_in_required_usernames =
+                required_usernames_p + bytes_read - 1;
             // Fix the line endings in the output buffer, we only want to output
             // Unix line endings (\n)
             if (*line_end == '\r') {
-                char *line_end_in_required_usernames = line_start + bytes_read;
-                char *line_end_plus_one = line_end + 1 * sizeof(*line_start);
+                char *line_end_plus_one = line_end + 1;
                 // replace Windows (\r\n) and Mac (\r) line endings with Unix
                 // line endings (\n)
                 *line_end_in_required_usernames = '\n';
-                // fast-forward to the '\n' in Windows line endings
+                // fast-forward the input buffer pointer to the '\n' in Windows
+                // line endings
                 if (*line_end_plus_one == '\n') {
                     line_end = line_end_plus_one;
                 }
             }
+            required_usernames_p = line_end_in_required_usernames + 1;
         }
         line_start = line_end + 1;
     } while (*line_end != '\0');
-    (*required_usernames)[required_usernames_sz] = '\0';
+    if (required_usernames_sz >= 1) {
+        // Here, we ensure that the final line ending is always '\0'.
+        // we include the line endings when we copy,
+        // but the output should only be *separated* by
+        // '\n' (not also end with a '\n').
+        // Example: "a\nb\n" -> "a\nb"
+        (*required_usernames)[required_usernames_sz - 1] = '\0';
+    } else {
+        // Here, required_usernames_sz == 0, this ensures that what is output is
+        // always a null-terminated string.
+        (*required_usernames)[required_usernames_sz] = '\0';
+    }
 
     result = MFL_SUCCESS;
 error:

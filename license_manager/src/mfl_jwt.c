@@ -314,7 +314,7 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
                 out_sz = 0;
                 goto error;
             }
-            out_p = *out - (out_sz - bytes_read);
+            out_p = *out + (out_sz - bytes_read);
         }
         memcpy(out_p, buffer, bytes_read);
         out_p += bytes_read;
@@ -478,7 +478,7 @@ error:
 }
 
 static int mfl_jwt_check_username_in_required_usernames(
-    char *username, char *required_usernames, char *error_msg_buffer)
+    const char *username, char *required_usernames, char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
