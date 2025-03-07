@@ -483,6 +483,7 @@ static int mfl_jwt_check_username_in_required_usernames(
     int result = MFL_ERROR;
     int status = MFL_ERROR;
     int found_username = MFL_ERROR;
+    int found_last_line_ending = MFL_ERROR;
     char *required_username = NULL;
     char *line_start = NULL;
     char *line_end = NULL;
@@ -506,6 +507,7 @@ static int mfl_jwt_check_username_in_required_usernames(
         line_end = strchr(line_start, '\n');
         if (line_end == NULL) {
             line_end = strchr(line_start, '\0');
+            found_last_line_ending = MFL_SUCCESS;
         }
         *line_end = '\0'; // update the line ending to '\0' so that we can use
                           // string comparison
@@ -517,7 +519,8 @@ static int mfl_jwt_check_username_in_required_usernames(
         }
 
         line_start = line_end + 1;
-    } while (!((*line_end == '\0') || (found_username == MFL_SUCCESS)));
+    } while (!((found_last_line_ending == MFL_SUCCESS) ||
+               (found_username == MFL_SUCCESS)));
     status = found_username;
     if (status != MFL_SUCCESS) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
