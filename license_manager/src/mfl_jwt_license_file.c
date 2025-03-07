@@ -131,7 +131,6 @@ static int mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_lic
                 required_usernames_capacity = required_usernames_capacity * 2;
                 *required_usernames = (char *)realloc(*required_usernames, required_usernames_capacity * sizeof(**required_usernames));
                 if (*required_usernames == NULL) {
-                    required_usernames_sz = 0;
                     snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
                             "error: Could not allocate "
                             "memory for output buffer required_usernames");
