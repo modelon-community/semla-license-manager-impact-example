@@ -41,14 +41,15 @@ mfl_license_jwt_t *mfl_jwt_license_new()
     return mfl_license;
 }
 
-
-static int mfl_jwt_initialize_required_usernames(mfl_license_jwt_t *mfl, char *libpath, char *error_msg_buffer)
+static int mfl_jwt_initialize_required_usernames(mfl_license_jwt_t *mfl,
+                                                 char *libpath,
+                                                 char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
 
-    status = mfl_jwt_license_file_get_required_usernames(&(mfl->required_usernames), libpath,
-                                                    error_msg_buffer);
+    status = mfl_jwt_license_file_get_required_usernames(
+        &(mfl->required_usernames), libpath, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
@@ -59,9 +60,8 @@ error:
     return result;
 }
 
-
 int mfl_jwt_initialize(mfl_module_data_t *module_data, char *libpath)
-{ 
+{
     mfl_license_jwt_t *mfl = (mfl_license_jwt_t *)module_data;
     int result = MFL_ERROR;
     int status = MFL_ERROR;
@@ -70,7 +70,8 @@ int mfl_jwt_initialize(mfl_module_data_t *module_data, char *libpath)
     if (mfl == NULL) {
         return MFL_ERROR;
     }
-    status = mfl_jwt_initialize_required_usernames(mfl, libpath, error_msg_buffer);
+    status =
+        mfl_jwt_initialize_required_usernames(mfl, libpath, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
         result = status;
@@ -99,7 +100,8 @@ int mfl_jwt_checkout_feature(mfl_module_data_t *module_data,
     if (mfl == NULL) {
         return MFL_ERROR;
     }
-    status = mfl_jwt_component_license_check(feature, mfl->required_usernames, error_msg_buffer);
+    status = mfl_jwt_component_license_check(feature, mfl->required_usernames,
+                                             error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
         // fflush(NULL);
@@ -474,7 +476,8 @@ error:
     return status;
 }
 
-static int mfl_jwt_check_username_in_required_usernames(char *username, char *required_usernames, char *error_msg_buffer)
+static int mfl_jwt_check_username_in_required_usernames(
+    char *username, char *required_usernames, char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
@@ -485,7 +488,8 @@ static int mfl_jwt_check_username_in_required_usernames(char *username, char *re
     size_t bytes_read = -1;
     char *required_usernames_dup = NULL;
 
-    // Only modify a copy of the input required_usernames, instead of modifying the input itself
+    // Only modify a copy of the input required_usernames, instead of modifying
+    // the input itself
     required_usernames_dup = strdup(required_usernames);
     if (required_usernames_dup == NULL) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
@@ -499,24 +503,25 @@ static int mfl_jwt_check_username_in_required_usernames(char *username, char *re
     do {
         // Find the line ending
         line_end = strchr(line_start, '\n');
-        if(line_end == NULL) {
+        if (line_end == NULL) {
             line_end = strchr(line_start, '\0');
         }
-        *line_end = '\0'; // update the line ending to '\0' so that we can use strcmp()
+        *line_end =
+            '\0'; // update the line ending to '\0' so that we can use strcmp()
 
-        required_username = line_start; 
-        if(strcmp(username, required_username) == 0) {
+        required_username = line_start;
+        if (strcmp(username, required_username) == 0) {
             found_username = MFL_SUCCESS;
         }
-        
+
         line_start = line_end + 1;
     } while (!((*line_end == '\0') || (found_username == MFL_SUCCESS)));
     status = found_username;
     if (status != MFL_SUCCESS) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-            "error: User '%s' is not licensed to use this library."
-            "The users that are licensed to use this library are:\n%s",
-            username, required_usernames);
+                 "error: User '%s' is not licensed to use this library."
+                 "The users that are licensed to use this library are:\n%s",
+                 username, required_usernames);
         result = status;
         goto error;
     }
@@ -525,7 +530,6 @@ error:
     free(required_usernames_dup);
     return result;
 }
-
 
 int mfl_jwt_component_license_check(const char *requested_feature,
                                     char *required_usernames,
@@ -949,7 +953,8 @@ int mfl_jwt_component_license_check(const char *requested_feature,
             goto error;
         }
 
-        status = mfl_jwt_check_username_in_required_usernames(username, required_usernames, error_msg_buffer);
+        status = mfl_jwt_check_username_in_required_usernames(
+            username, required_usernames, error_msg_buffer);
         if (status != MFL_SUCCESS) {
             result = status;
             goto error;
