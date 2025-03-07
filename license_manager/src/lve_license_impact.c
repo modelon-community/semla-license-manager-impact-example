@@ -17,7 +17,7 @@ struct mlle_license {
 };
 
 struct mlle_license*
-mlle_license_new(const char *not_used,
+mlle_license_new(const char *libpath,
                  struct mlle_error **error)
 {
         struct mlle_license *mlic = NULL;
@@ -29,7 +29,7 @@ mlle_license_new(const char *not_used,
             goto error;
         }
 
-        if (mfl_initialize(mfl) == MFL_ERROR) {
+        if (mfl_initialize(mfl, libpath) == MFL_ERROR) {
             mlle_error_set(error, LICENSE_DOMAIN, LICENSE_ERROR_INITIALIZATION_FAILURE,
                 "Failed to initialize MFL license interface");
             goto error;

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -19,6 +20,7 @@
 
 struct mfl_license_jwt {
     char *error_msg;
+    char *required_usernames;
 };
 
 // pre-definitions
@@ -40,7 +42,46 @@ mfl_license_jwt_t *mfl_jwt_license_new()
     return mfl_license;
 }
 
-int mfl_jwt_initialize(void *module_data) { return MFL_SUCCESS; }
+static int mfl_jwt_initialize_required_usernames(mfl_license_jwt_t *mfl,
+                                                 char *libpath,
+                                                 char *error_msg_buffer)
+{
+    int result = MFL_ERROR;
+    int status = MFL_ERROR;
+
+    status = mfl_jwt_license_file_get_required_usernames(
+        &(mfl->required_usernames), libpath, error_msg_buffer);
+    if (status != MFL_SUCCESS) {
+        result = status;
+        goto error;
+    }
+
+    result = MFL_SUCCESS;
+error:
+    return result;
+}
+
+int mfl_jwt_initialize(mfl_module_data_t *module_data, char *libpath)
+{
+    mfl_license_jwt_t *mfl = (mfl_license_jwt_t *)module_data;
+    int result = MFL_ERROR;
+    int status = MFL_ERROR;
+    char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+    memset(error_msg_buffer, '\0', MFL_JWT_ERROR_MSG_BUFFER_SIZE);
+    if (mfl == NULL) {
+        return MFL_ERROR;
+    }
+    status =
+        mfl_jwt_initialize_required_usernames(mfl, libpath, error_msg_buffer);
+    if (status != MFL_SUCCESS) {
+        set_error(mfl, error_msg_buffer);
+        result = status;
+        goto error;
+    }
+    result = MFL_SUCCESS;
+error:
+    return result;
+}
 
 void mfl_jwt_license_free(mfl_module_data_t *module_data)
 {
@@ -60,7 +101,8 @@ int mfl_jwt_checkout_feature(mfl_module_data_t *module_data,
     if (mfl == NULL) {
         return MFL_ERROR;
     }
-    status = mfl_jwt_component_license_check(feature, error_msg_buffer);
+    status = mfl_jwt_component_license_check(feature, mfl->required_usernames,
+                                             error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
         // fflush(NULL);
@@ -254,12 +296,14 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
     char buffer[8192];
     char *buffer_p = buffer;
     size_t bytes_read = 0;
+    char *out_p = NULL;
 
     *out = (char *)malloc(out_capacity * sizeof(**out));
     if (*out == NULL) {
         out_sz = 0;
         goto error;
     }
+    out_p = *out;
     while (
         (bytes_read = fread(buffer_p, sizeof(*buffer_p), sizeof(buffer), fp))) {
         out_sz += bytes_read;
@@ -270,8 +314,10 @@ size_t mfl_jwt_util_read_file(char **out, FILE *fp, char *error_msg_buffer)
                 out_sz = 0;
                 goto error;
             }
+            out_p = *out + (out_sz - bytes_read);
         }
-        memcpy(*out, buffer, bytes_read);
+        memcpy(out_p, buffer, bytes_read);
+        out_p += bytes_read;
     }
     (*out)[out_sz] = '\0';
 error:
@@ -431,7 +477,67 @@ error:
     return status;
 }
 
+static int mfl_jwt_check_username_in_required_usernames(
+    const char *username, char *required_usernames, char *error_msg_buffer)
+{
+    int result = MFL_ERROR;
+    int status = MFL_ERROR;
+    int found_username = MFL_ERROR;
+    int found_last_line_ending = MFL_ERROR;
+    char *required_username = NULL;
+    char *line_start = NULL;
+    char *line_end = NULL;
+    size_t bytes_read = -1;
+    char *required_usernames_dup = NULL;
+
+    // Only modify a copy of the input required_usernames, instead of modifying
+    // the input itself
+    required_usernames_dup = strdup(required_usernames);
+    if (required_usernames_dup == NULL) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: Could not allocate "
+                 "memory for required_usernames_dup");
+        result = MFL_ERROR;
+        goto error;
+    }
+    line_start = required_usernames_dup;
+    // Find username in required_usernames (dup)
+    do {
+        // Find the line ending
+        line_end = strchr(line_start, '\n');
+        if (line_end == NULL) {
+            line_end = strchr(line_start, '\0');
+            found_last_line_ending = MFL_SUCCESS;
+        }
+        *line_end = '\0'; // update the line ending to '\0' so that we can use
+                          // string comparison
+
+        required_username = line_start;
+        // use case insensitive string comparison for the username
+        if (strcasecmp(username, required_username) == 0) {
+            found_username = MFL_SUCCESS;
+        }
+
+        line_start = line_end + 1;
+    } while (!((found_last_line_ending == MFL_SUCCESS) ||
+               (found_username == MFL_SUCCESS)));
+    status = found_username;
+    if (status != MFL_SUCCESS) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+                 "error: User '%s' is not licensed to use this library."
+                 "The users that are licensed to use this library are:\n%s",
+                 username, required_usernames);
+        result = status;
+        goto error;
+    }
+    result = status;
+error:
+    free(required_usernames_dup);
+    return result;
+}
+
 int mfl_jwt_component_license_check(const char *requested_feature,
+                                    char *required_usernames,
                                     char *error_msg_buffer)
 {
     int result = MFL_ERROR;
@@ -450,7 +556,6 @@ int mfl_jwt_component_license_check(const char *requested_feature,
     const char *feature_json_str = NULL;
     int requested_feature_found = 0;
 
-    char *required_username = NULL;
     char *user_object_json_str = NULL;
     json_t *user_object_json = NULL;
     json_t *username_json = NULL;
@@ -726,14 +831,8 @@ int mfl_jwt_component_license_check(const char *requested_feature,
         goto error;
     }
 
-    // check that the "user" object contains required_username
+    // check that the "user" object contains "username" in required_usernames
     {
-        status = mfl_jwt_license_file_get_required_user(&required_username,
-                                                        error_msg_buffer);
-        if (status != MFL_SUCCESS) {
-            result = status;
-            goto error;
-        }
         user_object_json_str = jwt_get_grants_json(jwt, "user");
         if (user_object_json_str == NULL) {
             const char *error_msg_start = NULL;
@@ -857,59 +956,13 @@ int mfl_jwt_component_license_check(const char *requested_feature,
                 &error_msg_buffer_remaining_size, error_msg_description_end);
             LOGE("%s\n", error_msg_buffer);
             goto error;
-        } else if (!strcmp(username, required_username) == 0) {
-            char *error_msg_buffer_current_position = error_msg_buffer;
-            size_t error_msg_buffer_remaining_size =
-                MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-            const char *error_msg_start = NULL;
-            const char *error_msg_middle = NULL;
-            const char *error_msg_description_jwt = NULL;
-            char *jwt_dump_str_result = NULL;
-            const char *error_msg_description_end = NULL;
-            char error_msg_input_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
-            size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-            memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
-            error_msg_start =
-                "error: User '%s' is not licensed to use this library."
-                "The user that is licensed to use this library is '%s'";
-            snprintf(error_msg_input_buffer, error_msg_input_buffer_sz,
-                     error_msg_start, required_username, username);
-            _snprintf_and_increment_error_msg_buffer(
-                &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, error_msg_input_buffer);
-            error_msg_middle = "\n\njwt claim 'user' json input:\n";
-            _snprintf_and_increment_error_msg_buffer(
-                &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, error_msg_middle);
-            _snprintf_and_increment_error_msg_buffer(
-                &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, features_list_json_str);
+        }
 
-            error_msg_description_jwt = "\n\njwt:\n";
-            _snprintf_and_increment_error_msg_buffer(
-                &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, error_msg_description_jwt);
-            jwt_dump_str_result = jwt_dump_str(jwt, 1);
-            _snprintf_and_increment_error_msg_buffer(
-                &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, jwt_dump_str_result);
-            free(jwt_dump_str_result);
-
-            error_msg_description_end = "\n";
-            _snprintf_and_increment_error_msg_buffer(
-                &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, error_msg_description_end);
-            LOGE("%s\n", error_msg_buffer);
+        status = mfl_jwt_check_username_in_required_usernames(
+            username, required_usernames, error_msg_buffer);
+        if (status != MFL_SUCCESS) {
+            result = status;
             goto error;
-        }
-        json_array_foreach(features_list_json, i, feature_json)
-        {
-            feature_json_str =
-                json_string_value(feature_json); // does not need to be freed
-            if (feature_json_str == NULL) {
-            }
-        }
-        if (!requested_feature_found) {
         }
     }
 
@@ -918,7 +971,6 @@ error:
     free(jwt_token);
     json_decref(user_object_json);
     free(user_object_json_str);
-    free(required_username);
     json_decref(features_list_json);
     free(features_list_json_str);
     jwt_free(jwt);

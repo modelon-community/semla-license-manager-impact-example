@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,9 @@
 
 #include "sslecho.h"
 #endif
+
+#define STR2(x) #x
+#define STR(x) STR2(x)
 
 #define TEST_REPORT_FN "report.xml"
 
@@ -120,15 +124,17 @@ error:
     return result;
 }
 
-static int _encode_json_without_kid_header_claim(json_t *json, char **jwt_token)
+static int _encode_json_without_kid_header_claim(json_t *json,
+                                                 char **json_response)
 {
     int result = MFL_ERROR;
-    char *json_str;
+    int status = MFL_ERROR;
+    char *json_str = NULL;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    int status;
+    char *jwt_token = NULL;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
@@ -136,7 +142,7 @@ static int _encode_json_without_kid_header_claim(json_t *json, char **jwt_token)
         goto error;
     }
 
-    // No 'kid' header claim added here, cf. _encode_json()
+    // Difference with _encode_json() here: No 'kid' header claim is added.
 
     json_str = json_dumps(json, 0);
     ck_assert_ptr_ne(json_str, NULL);
@@ -151,30 +157,35 @@ static int _encode_json_without_kid_header_claim(json_t *json, char **jwt_token)
         fprintf(stderr, "jwt_set_alg() failed\n");
         goto error;
     }
-    *jwt_token = jwt_encode_str(jwt);
+    jwt_token = jwt_encode_str(jwt);
+    _wrap_jwt_token_in_json_response(json_response, jwt_token);
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
     free(json_str);
     jwt_free(jwt);
     return result;
 }
 
-static int _encode_json_with_nonexistent_kid(json_t *json, char **jwt_token)
+static int _encode_json_with_nonexistent_kid(json_t *json, char **json_response)
 {
     int result = MFL_ERROR;
-    char *json_str;
+    int status = MFL_ERROR;
+    char *json_str = NULL;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    int status;
+    char *jwt_token = NULL;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
         fprintf(stderr, "jwt_new() failed\n");
         goto error;
     }
-    // use a nonexistent kid "nonexistent-kid", cf. _encode_json()
+
+    // Difference with _encode_json() here: Use a nonexistent kid
+    // "nonexistent-kid".
     status = jwt_add_header(jwt, "kid", "nonexistent-kid");
     if (status != 0) {
         fprintf(stderr, "jwt_add_header() failed\n");
@@ -193,12 +204,71 @@ static int _encode_json_with_nonexistent_kid(json_t *json, char **jwt_token)
         fprintf(stderr, "jwt_set_alg() failed\n");
         goto error;
     }
-    *jwt_token = jwt_encode_str(jwt);
+    jwt_token = jwt_encode_str(jwt);
+    _wrap_jwt_token_in_json_response(json_response, jwt_token);
     result = MFL_SUCCESS;
 error:
+    free(jwt_token);
     free(json_str);
     jwt_free(jwt);
     return result;
+}
+
+static void _get_tmp_dir(char **tmp_dir)
+{
+    *tmp_dir = getenv("TMPDIR");
+    if (*tmp_dir == NULL) {
+        *tmp_dir = "/tmp";
+    }
+    *tmp_dir = realpath(*tmp_dir, NULL);
+}
+
+/**
+ * Caller must free tmp_dir.
+ */
+static void _create_tmp_dir(char **tmp_dir, char *tmp_dir_name_template)
+{
+    char *toplevel_tmp_dir = NULL;
+    _get_tmp_dir(&toplevel_tmp_dir);
+    size_t tmp_dir_sz =
+        strlen(toplevel_tmp_dir) + strlen("/") + strlen(tmp_dir_name_template);
+    *tmp_dir = malloc((tmp_dir_sz + 1) * sizeof(**tmp_dir));
+    sprintf(*tmp_dir, "%s%s%s", toplevel_tmp_dir, "/", tmp_dir_name_template);
+    *tmp_dir = mkdtemp(*tmp_dir);
+    free(toplevel_tmp_dir);
+}
+
+static void _create_tmp_file(FILE **tmp_fp, char **tmp_file,
+                             char *tmp_file_name_template)
+{
+    int tmp_fd = -1;
+    char *toplevel_tmp_dir = NULL;
+    _get_tmp_dir(&toplevel_tmp_dir);
+    size_t tmp_file_name_sz =
+        strlen(toplevel_tmp_dir) + strlen("/") + strlen(tmp_file_name_template);
+    *tmp_file = malloc((tmp_file_name_sz + 1) * sizeof(**tmp_file));
+    sprintf(*tmp_file, "%s%s%s", toplevel_tmp_dir, "/", tmp_file_name_template);
+    tmp_fd = mkstemp(*tmp_file);
+    ck_assert_int_ne(tmp_fd, -1);
+    *tmp_fp = fdopen(tmp_fd, "w");
+    free(toplevel_tmp_dir);
+}
+
+static int _write_to_tmp_file(char **tmp_file, char *tmp_file_name_template,
+                              char *format, ...)
+{
+    FILE *tmp_fp = NULL;
+    _create_tmp_file(&tmp_fp, tmp_file, tmp_file_name_template);
+    ck_assert_ptr_ne(tmp_fp, NULL);
+    va_list args;
+    va_start(args, format);
+    size_t bytes_written = vfprintf(tmp_fp, format, args);
+    va_end(args);
+    // assert bytes_written >= 0 (because bytes_written < 0 if error)
+    ck_assert_int_ge(bytes_written, 0);
+    int status = fclose(tmp_fp);
+    ck_assert_int_eq(status, 0);
+    return bytes_written;
 }
 
 START_TEST(test_mfl_jwt_checkout_checkin)
@@ -246,6 +316,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     json_t *json = json_loads(jsonbuf, 0, NULL);
     // feature to check out from the 'features' list in the json above
     char *requested_feature_existant = "Feature2";
+    char *required_users_existant = "example.email@example.com";
     char *json_str = NULL;
     json_t *json2 = NULL;
     char *json2_str = NULL;
@@ -274,6 +345,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         mfl_jwt_unsetenv_any_jwt_env_var();
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
         if (status == MFL_ERROR) {
@@ -302,6 +374,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         // workaround for self-signed certificate not verifying
         setenv("MFL_SSL_NO_VERIFY", "1", 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
         if (status == MFL_ERROR) {
@@ -309,7 +382,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             ck_abort_msg(error_msg_buffer);
         }
         ck_assert_int_eq(status, MFL_SUCCESS);
-        status = chdir("../../");
+        status = chdir("../");
         ck_assert_int_eq(status, 0);
     }
 
@@ -329,6 +402,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         requested_feature_existant = "Feature1";
         expected_error_message_start = "error: command failed";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -343,32 +417,19 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         mfl_jwt_unsetenv_any_jwt_env_var();
-        // output jwt_token to temp file
-        char *tmp_dir = getenv("TMPDIR");
-        if (tmp_dir == NULL) {
-            tmp_dir = "/tmp";
-        }
-        tmp_dir = realpath(tmp_dir, NULL);
-        char *tmp_file_name_template = "jwt_token_XXXXXX";
-        size_t tmp_file_name_sz =
-            strlen(tmp_dir) + strlen("/") + strlen(tmp_file_name_template);
-        char *tmp_file_name =
-            malloc((tmp_file_name_sz + 1) * sizeof(*tmp_file_name));
-        sprintf(tmp_file_name, "%s%s%s", tmp_dir, "/", tmp_file_name_template);
-        int tmp_fd = mkstemp(tmp_file_name);
-        ck_assert_int_ne(tmp_fd, -1);
-        FILE *tmp_fp = fdopen(tmp_fd, "w");
-        ck_assert_ptr_ne(tmp_fp, NULL);
         int jwt_token_sz = strlen(jwt_token);
-        size_t bytes_written = fprintf(tmp_fp, "%s", jwt_token);
+        char *tmp_file_name = NULL;
+        size_t bytes_written =
+            _write_to_tmp_file(&tmp_file_name, "jwt_token_XXXXXX", jwt_token);
+
         ck_assert_int_eq(bytes_written, jwt_token_sz);
-        fflush(tmp_fp);
         size_t tmp_file_url_sz = strlen("file://") + strlen(tmp_file_name);
         char *tmp_file_url =
             malloc((tmp_file_url_sz + 1) * sizeof(*tmp_file_url));
         sprintf(tmp_file_url, "%s%s", "file://", tmp_file_name);
         setenv("MODELON_LICENSE_USER_JWT_URL", tmp_file_url, 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         if (status == MFL_ERROR) {
             // fail the test and output the error message
@@ -377,8 +438,6 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         ck_assert_int_eq(status, MFL_SUCCESS);
         status = unlink(tmp_file_name);
         ck_assert_int_eq(status, 0);
-        fclose(tmp_fp);
-        free(tmp_dir);
         free(tmp_file_name);
     }
 
@@ -388,6 +447,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         mfl_jwt_unsetenv_any_jwt_env_var();
         setenv("MODELON_LICENSE_USER_JWT_URL", "file:///nonexistent/file", 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
     }
@@ -405,6 +465,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "with a supported protocol. Supported protocols: 'file://', "
             "'http://', or 'https://'";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -416,26 +477,147 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     }
 
     // test using mfl_interface
+    // Also: test with a license file with several users, and with {Windows,
+    // Mac, Unix} line endings. Covers both the code that parses the license
+    // file and the code that finds the user from the jwt in the list of users
+    // from the license file.
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         mfl_jwt_unsetenv_any_jwt_env_var();
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         char *version = "1.0";
         int num_lic = 1;
+        int bytes_written = -1;
 
+        // create mock encrypted library as a temp dir
+        char *library_path = NULL;
+        _create_tmp_dir(&library_path,
+                        "test_mfl_license_check_mock_encrypted_library_XXXXXX");
+
+        // write decrypted package.mo to library
+        char *decrypted_package_mo_path = NULL;
+        FILE *decrypted_package_mo_fp = NULL;
+        bytes_written = asprintf(&decrypted_package_mo_path, "%s/%s",
+                                 library_path, "package.mo");
+        ck_assert_int_ge(bytes_written, 0);
+        decrypted_package_mo_fp = fopen(decrypted_package_mo_path, "w");
+        fprintf(decrypted_package_mo_fp, "package P\n"
+                                         "end P;\n");
+        status = fclose(decrypted_package_mo_fp);
+        ck_assert_int_eq(status, 0);
+
+        // write decrypted license file to library
+        char *decrypted_license_file_path = NULL;
+        FILE *decrypted_license_file_fp = NULL;
+        bytes_written =
+            asprintf(&decrypted_license_file_path, "%s/%s", library_path,
+                     STR(MFL_JWT_LICENSE_FILE_FILENAME));
+        ck_assert_int_ge(bytes_written, 0);
+        decrypted_license_file_fp = fopen(decrypted_license_file_path, "w");
+        fprintf(decrypted_license_file_fp,
+                "model license\n"
+                "/*\n"
+                "other.user1@example.com\n"
+                "%s\r\n"                    // <--- Windows line ending
+                "other.user2@example.com\r" // <-- Mac line ending
+                "*/\n"
+                "end license;\n",
+                required_users_existant);
+        status = fclose(decrypted_license_file_fp);
+        ck_assert_int_eq(status, 0);
+
+        // encrypt package.mo to package.moc
+        char *encrypted_package_mo_path = NULL;
+        char *encrypted_package_mo_filename_original = NULL;
+        char *encrypted_package_mo_filename = NULL;
+        FILE *encrypted_package_mo_fp = NULL;
+        char *encrypt_package_mo_command = NULL;
+        bytes_written = asprintf(&encrypted_package_mo_path, "%s/%sc",
+                                 library_path, "package.mo");
+        ck_assert_int_ge(bytes_written, 0);
+        // basename() man page recommends passing in a copy of the string
+        // because it may be modified depending on how the function is
+        // implemented
+        encrypted_package_mo_filename_original =
+            strdup(encrypted_package_mo_path);
+        ck_assert_ptr_ne(encrypted_package_mo_filename_original, NULL);
+        encrypted_package_mo_filename =
+            basename(encrypted_package_mo_filename_original);
+        bytes_written = asprintf(&encrypt_package_mo_command,
+                                 "../../../encrypt_file %s %s %s",
+                                 decrypted_package_mo_path,
+                                 encrypted_package_mo_filename, library_path);
+        ck_assert_int_ge(bytes_written, 0);
+        status = system(encrypt_package_mo_command);
+        ck_assert_int_eq(status, 0);
+
+        // encrypt license file from .mo to .moc
+        char *encrypted_license_file_path = NULL;
+        char *encrypted_license_file_filename_original = NULL;
+        char *encrypted_license_file_filename = NULL;
+        FILE *encrypted_license_file_fp = NULL;
+        char *encrypt_license_file_command = NULL;
+        bytes_written =
+            asprintf(&encrypted_license_file_path, "%s/%sc", library_path,
+                     STR(MFL_JWT_LICENSE_FILE_FILENAME));
+        encrypted_license_file_filename_original =
+            strdup(encrypted_license_file_path);
+        ck_assert_ptr_ne(encrypted_license_file_filename_original, NULL);
+        encrypted_license_file_filename =
+            basename(encrypted_license_file_filename_original);
+        ck_assert_int_ge(bytes_written, 0);
+        bytes_written = asprintf(&encrypt_license_file_command,
+                                 "../../../encrypt_file %s %s %s",
+                                 decrypted_license_file_path,
+                                 encrypted_license_file_filename, library_path);
+        ck_assert_int_ge(bytes_written, 0);
+        status = system(encrypt_license_file_command);
+        ck_assert_int_eq(status, 0);
+
+        // remove the .mo files (but keep the .moc files) -- the library is now
+        // encrypted
+        status = unlink(decrypted_license_file_path);
+        ck_assert_int_eq(status, 0);
+        status = unlink(decrypted_package_mo_path);
+        ck_assert_int_eq(status, 0);
+
+        // do the test
         mfl = mfl_license_new();
         ck_assert_ptr_ne(mfl, NULL);
-        status = mfl_initialize(mfl);
+        status = mfl_initialize(mfl, library_path);
         if (status != MFL_SUCCESS) {
-            fprintf(stderr, "%s\n", mfl_last_error(mfl));
+            ck_abort_msg(mfl_last_error(mfl));
         }
         ck_assert_int_eq(status, MFL_SUCCESS);
         status = mfl_checkout_feature(mfl, requested_feature_existant, version,
                                       num_lic);
+        if (status != MFL_SUCCESS) {
+            ck_abort_msg(mfl_last_error(mfl));
+        }
         ck_assert_int_eq(status, MFL_SUCCESS);
         status = mfl_checkin_feature(mfl, requested_feature_existant);
         ck_assert_int_eq(status, MFL_SUCCESS);
         mfl_license_free(mfl);
+
+        // cleanup
+        free(encrypted_package_mo_filename_original);
+        free(encrypt_package_mo_command);
+        status = unlink(encrypted_package_mo_path);
+        ck_assert_int_eq(status, 0);
+        free(encrypted_package_mo_path);
+
+        free(encrypted_license_file_filename_original);
+        free(encrypt_license_file_command);
+        status = unlink(encrypted_license_file_path);
+        ck_assert_int_eq(status, 0);
+        free(encrypted_license_file_path);
+
+        free(decrypted_license_file_path);
+
+        free(decrypted_package_mo_path);
+
+        status = rmdir(library_path);
+        ck_assert_int_eq(status, 0);
     }
 
     // test "error: header claim 'kid' not found"
@@ -473,6 +655,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: header claim 'kid' not found";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -518,6 +701,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: public key with kid not found";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -570,6 +754,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "error: jwt does not contain claim, or claim value is not a json "
             "string: format_version";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -623,6 +808,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "error: jwt does not contain claim, or claim value is not a json "
             "string: format_version";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -673,6 +859,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start = "error: claim 'format_version': actual "
                                        "value does not match expected value:";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -722,6 +909,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: jwt validation failed: status:";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -765,6 +953,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start =
             "error: jwt does not contain claim: features";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -810,6 +999,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start =
             "error: failed to load json: jwt claim 'features' json input:\n";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -855,6 +1045,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start =
             "error: not a json array: jwt claim 'features' json input:\n";
         status = mfl_jwt_component_license_check(requested_feature_nonexistant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -901,6 +1092,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: not a json string: value:";
         status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -949,6 +1141,61 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "error: requested feature not found in jwt claim 'features': "
             "requested feature:";
         status = mfl_jwt_component_license_check(requested_feature_nonexistant,
+                                                 required_users_existant,
+                                                 error_msg_buffer);
+        ck_assert_int_eq(status, MFL_ERROR);
+        ck_assert_ptr_ne(error_msg_buffer, NULL);
+        actual_error_message_start =
+            strndup(error_msg_buffer, strlen(expected_error_message_start));
+        ck_assert_str_eq(actual_error_message_start,
+                         expected_error_message_start);
+        free(actual_error_message_start);
+    }
+
+    // test "error: User '%s' is not licensed to use this library."
+    {
+        char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+        char jsonbuf[1024];
+        json_t *json;
+        char *jwt_token;
+        const char *expected_error_message_start;
+        char *actual_error_message_start;
+        mfl_jwt_unsetenv_any_jwt_env_var();
+        // Keep json alphabetically sorted and no newlines for easy comparison.
+        sprintf(
+            jsonbuf,
+            "{"
+            // expiration time
+            "\"exp\":%ld,"
+            "\"features\":["
+            "\"Feature1\","
+            "\"Feature2\""
+            "],"
+            "\"format_version\":\"1.0.0\","
+            // issued at (unused by jwt_validate())
+            "\"iat\":%ld,"
+            // not before
+            "\"nbf\":%ld,"
+            "\"user\": {"
+            "\"id\": \"example-id\","
+            "\"username\": \"notlicensed.user@example.com\"" // <--- this user
+                                                             // is not licensed
+                                                             // to use this
+                                                             // library
+            "}"
+            "}",
+            exp, iat, nbf);
+        json = json_loads(jsonbuf, 0, NULL);
+        ck_assert_ptr_ne(json, NULL);
+        status = _encode_json(json, &jwt_token);
+        ck_assert_int_eq(status, MFL_SUCCESS);
+        setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
+        expected_error_message_start =
+            "error: User 'notlicensed.user@example.com' is not licensed to use "
+            "this library.The users that are licensed to use this library "
+            "are:\nexample.email@example.com";
+        status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 required_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);

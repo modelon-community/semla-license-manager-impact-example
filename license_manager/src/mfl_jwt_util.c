@@ -102,9 +102,10 @@ error:
             mfl_jwt_util_read_file(
                 &command_stderr, command_stderr_fp, error_msg_buffer);
             snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-                     "error: command failed. exit status: '%d'\n"
-                     "stderr output: '%s'\n",
-                     command_exit_status, command_stderr);
+                     "error: command failed. exit status: '%d' stderr "
+                     "output: '%s' "
+                     "command: '%s'",
+                     command_exit_status, command_stderr, command);
             result = -1;
         }
     }

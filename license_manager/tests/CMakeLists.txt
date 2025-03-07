@@ -18,6 +18,12 @@ else()
         test_mfl_license_check.c
         $<TARGET_OBJECTS:unit_test_util>
     )
+
+    if (NOT MFL_JWT_LICENSE_FILE_FILENAME)
+        message(FATAL_ERROR "error: variable not set: MFL_JWT_LICENSE_FILE_FILENAME")
+    endif()
+    target_compile_definitions(test_mfl_license_check PRIVATE MFL_JWT_LICENSE_FILE_FILENAME=${MFL_JWT_LICENSE_FILE_FILENAME})
+
     target_link_libraries(test_mfl_license_check license_manager)
     add_subdirectory(sslecho)
     target_link_libraries(test_mfl_license_check sslecho)
