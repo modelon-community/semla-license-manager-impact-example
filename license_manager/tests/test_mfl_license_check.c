@@ -477,6 +477,9 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     }
 
     // test using mfl_interface
+    // Also: test with a license file with several users. Covers both the code
+    // that parses the license file and the code that finds the user from the
+    // jwt in the list of users from the license file.
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         mfl_jwt_unsetenv_any_jwt_env_var();
@@ -513,7 +516,9 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         fprintf(decrypted_license_file_fp,
                 "model license\n"
                 "/*\n"
+                "other.user1@example.com\n"
                 "%s\n"
+                "other.user2@example.com\n"
                 "*/\n"
                 "end license;\n",
                 required_users_existant);
