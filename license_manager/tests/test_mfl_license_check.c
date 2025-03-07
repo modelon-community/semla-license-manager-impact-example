@@ -513,26 +513,42 @@ START_TEST(test_mfl_jwt_checkout_checkin)
 
         // encrypt package.mo to package.moc
         char *encrypted_package_mo_path = NULL;
+        char *encrypted_package_mo_filename_original = NULL;
+        char *encrypted_package_mo_filename = NULL;
         FILE *encrypted_package_mo_fp = NULL;
         char *encrypt_package_mo_command = NULL;
         bytes_written = asprintf(&encrypted_package_mo_path, "%s/%sc", library_path, "package.mo");
         ck_assert_int_ge(bytes_written, 0);
-        bytes_written = asprintf(&encrypt_package_mo_command, "../../../encrypt_file %s %s %s", decrypted_package_mo_path, encrypted_package_mo_path, library_path);
+        // basename() man page recommends passing in a copy of the string because it may be modified depending on how the function is implemented
+        encrypted_package_mo_filename_original = strdup(encrypted_package_mo_path); 
+        ck_assert_ptr_ne(encrypted_package_mo_filename_original, NULL);
+        encrypted_package_mo_filename = basename(encrypted_package_mo_filename_original);
+        bytes_written = asprintf(&encrypt_package_mo_command, "../../encrypt_file %s %s %s", decrypted_package_mo_path, encrypted_package_mo_filename, library_path);
         ck_assert_int_ge(bytes_written, 0);
         status = system(encrypt_package_mo_command);
         ck_assert_int_eq(status , 0);
 
         // encrypt license file from .mo to .moc
         char *encrypted_license_file_path = NULL;
+        char *encrypted_license_file_filename_original = NULL;
+        char *encrypted_license_file_filename = NULL;
         FILE *encrypted_license_file_fp = NULL;
         char *encrypt_license_file_command = NULL;
         bytes_written = asprintf(&encrypted_license_file_path, "%s/%sc", library_path, STR(MFL_JWT_LICENSE_FILE_FILENAME));
+        encrypted_license_file_filename_original = strdup(encrypted_license_file_path); 
+        ck_assert_ptr_ne(encrypted_license_file_filename_original, NULL);
+        encrypted_license_file_filename = basename(encrypted_license_file_filename_original);
         ck_assert_int_ge(bytes_written, 0);
-        bytes_written = asprintf(&encrypt_license_file_command, "../../../encrypt_file %s %s %s", decrypted_license_file_path, encrypted_license_file_path, library_path);
+        bytes_written = asprintf(&encrypt_license_file_command, "../../encrypt_file %s %s %s", decrypted_license_file_path, encrypted_license_file_filename, library_path);
         ck_assert_int_ge(bytes_written, 0);
         status = system(encrypt_license_file_command);
         ck_assert_int_eq(status , 0);
 
+        // remove the .mo files (but keep the .moc files) -- the library is now encrypted
+        status = unlink(decrypted_license_file_path);
+        ck_assert_int_eq(status, 0);
+        status = unlink(decrypted_package_mo_path);
+        ck_assert_int_eq(status, 0);
 
         // do the test
         mfl = mfl_license_new();
@@ -550,20 +566,22 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         mfl_license_free(mfl);
 
         // cleanup
+        free(encrypted_package_mo_filename_original);
         free(encrypt_package_mo_command);
         status = unlink(encrypted_package_mo_path);
         ck_assert_int_eq(status, 0);
         free(encrypted_package_mo_path);
-        free(encrypt_package_mo_command);
+
+        free(encrypted_license_file_filename_original);
+        free(encrypt_license_file_command);
         status = unlink(encrypted_license_file_path);
         ck_assert_int_eq(status, 0);
         free(encrypted_license_file_path);
-        status = unlink(decrypted_license_file_path);
-        ck_assert_int_eq(status, 0);
+
         free(decrypted_license_file_path);
-        status = unlink(decrypted_package_mo_path);
-        ck_assert_int_eq(status, 0);
+
         free(decrypted_package_mo_path);
+
         status = rmdir(library_path);
         ck_assert_int_eq(status, 0);
     }
