@@ -20,6 +20,9 @@ add_library(license_manager
 if (NOT MFL_JWT_LICENSE_FILE_FILENAME)
     message(FATAL_ERROR "error: variable not set: MFL_JWT_LICENSE_FILE_FILENAME")
 endif()
+if (NOT (MFL_JWT_LICENSE_FILE_FILENAME MATCHES ".*\.mo$"))
+    message(FATAL_ERROR "error: filename must end with the extension '.mo': MFL_JWT_LICENSE_FILE_FILENAME=${MFL_JWT_LICENSE_FILE_FILENAME}")
+endif()
 target_compile_definitions(license_manager PRIVATE MFL_JWT_LICENSE_FILE_FILENAME=${MFL_JWT_LICENSE_FILE_FILENAME})
 
 include(${CMAKE_CURRENT_LIST_DIR}/../jansson/CMakeLists.txt)

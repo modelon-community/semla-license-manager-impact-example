@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,9 @@
 
 #include "sslecho.h"
 #endif
+
+#define STR2(x) #x
+#define STR(x) STR2(x)
 
 #define TEST_REPORT_FN "report.xml"
 
@@ -124,12 +128,12 @@ static int _encode_json_without_kid_header_claim(json_t *json, char **json_respo
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
-    char *json_str;
+    char *json_str = NULL;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    char *jwt_token;
+    char *jwt_token = NULL;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
@@ -166,12 +170,12 @@ static int _encode_json_with_nonexistent_kid(json_t *json, char **json_response)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
-    char *json_str;
+    char *json_str = NULL;
     jwt_t *jwt;
     jwt_alg_t jwt_alg = JWT_ALG_RS256;
     char *jwt_key;
     size_t jwt_key_sz;
-    char *jwt_token;
+    char *jwt_token = NULL;
 
     status = jwt_new(&jwt);
     if (status != 0 || jwt == NULL) {
@@ -206,6 +210,61 @@ error:
     free(json_str);
     jwt_free(jwt);
     return result;
+}
+
+static void _get_tmp_dir(char **tmp_dir) {
+    *tmp_dir = getenv("TMPDIR");
+    if (*tmp_dir == NULL) {
+        *tmp_dir = "/tmp";
+    }
+    *tmp_dir = realpath(*tmp_dir, NULL);
+}
+
+/**
+ * Caller must free tmp_dir.
+ */
+static void _create_tmp_dir(char **tmp_dir, char *tmp_dir_name_template) {
+    char *toplevel_tmp_dir = NULL;
+    _get_tmp_dir(&toplevel_tmp_dir);
+    size_t tmp_dir_sz =
+        strlen(toplevel_tmp_dir) + strlen("/") + strlen(tmp_dir_name_template);
+    *tmp_dir = malloc((tmp_dir_sz + 1) * sizeof(**tmp_dir));
+    sprintf(*tmp_dir, "%s%s%s", toplevel_tmp_dir, "/", tmp_dir_name_template);
+    *tmp_dir = mkdtemp(*tmp_dir);
+    free(toplevel_tmp_dir);
+}
+
+static void _create_tmp_file(FILE **tmp_fp, char **tmp_file,
+                             char *tmp_file_name_template)
+{
+    int tmp_fd = -1;
+    char *toplevel_tmp_dir = NULL;
+    _get_tmp_dir(&toplevel_tmp_dir);
+    size_t tmp_file_name_sz =
+        strlen(toplevel_tmp_dir) + strlen("/") + strlen(tmp_file_name_template);
+    *tmp_file = malloc((tmp_file_name_sz + 1) * sizeof(**tmp_file));
+    sprintf(*tmp_file, "%s%s%s", toplevel_tmp_dir, "/", tmp_file_name_template);
+    tmp_fd = mkstemp(*tmp_file);
+    ck_assert_int_ne(tmp_fd, -1);
+    *tmp_fp = fdopen(tmp_fd, "w");
+    free(toplevel_tmp_dir);
+}
+
+static int _write_to_tmp_file(char **tmp_file, char *tmp_file_name_template,
+                               char *format, ...)
+{
+    FILE *tmp_fp = NULL;
+    _create_tmp_file(&tmp_fp, tmp_file, tmp_file_name_template);
+    ck_assert_ptr_ne(tmp_fp, NULL);
+    va_list args;
+    va_start(args, format);
+    size_t bytes_written = vfprintf(tmp_fp, format, args);
+    va_end(args);
+    // assert bytes_written >= 0 (because bytes_written < 0 if error)
+    ck_assert_int_ge(bytes_written, 0);
+    int status = fclose(tmp_fp);
+    ck_assert_int_eq(status, 0);
+    return bytes_written;
 }
 
 START_TEST(test_mfl_jwt_checkout_checkin)
@@ -351,26 +410,15 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         mfl_jwt_unsetenv_any_jwt_env_var();
-        // output jwt_token to temp file
-        char *tmp_dir = getenv("TMPDIR");
-        if (tmp_dir == NULL) {
-            tmp_dir = "/tmp";
-        }
-        tmp_dir = realpath(tmp_dir, NULL);
-        char *tmp_file_name_template = "jwt_token_XXXXXX";
-        size_t tmp_file_name_sz =
-            strlen(tmp_dir) + strlen("/") + strlen(tmp_file_name_template);
-        char *tmp_file_name =
-            malloc((tmp_file_name_sz + 1) * sizeof(*tmp_file_name));
-        sprintf(tmp_file_name, "%s%s%s", tmp_dir, "/", tmp_file_name_template);
-        int tmp_fd = mkstemp(tmp_file_name);
-        ck_assert_int_ne(tmp_fd, -1);
-        FILE *tmp_fp = fdopen(tmp_fd, "w");
-        ck_assert_ptr_ne(tmp_fp, NULL);
         int jwt_token_sz = strlen(jwt_token);
-        size_t bytes_written = fprintf(tmp_fp, "%s", jwt_token);
+        char *tmp_file_name = NULL;
+        size_t bytes_written = _write_to_tmp_file(
+            &tmp_file_name,
+            "jwt_token_XXXXXX",
+            jwt_token
+        );
+        
         ck_assert_int_eq(bytes_written, jwt_token_sz);
-        fflush(tmp_fp);
         size_t tmp_file_url_sz = strlen("file://") + strlen(tmp_file_name);
         char *tmp_file_url =
             malloc((tmp_file_url_sz + 1) * sizeof(*tmp_file_url));
@@ -385,8 +433,6 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         ck_assert_int_eq(status, MFL_SUCCESS);
         status = unlink(tmp_file_name);
         ck_assert_int_eq(status, 0);
-        fclose(tmp_fp);
-        free(tmp_dir);
         free(tmp_file_name);
     }
 
@@ -424,18 +470,74 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     }
 
     // test using mfl_interface
-    // TODO test is skipped: need to create "libpath": temp dir with example license file
-    if (0) {
+    {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         mfl_jwt_unsetenv_any_jwt_env_var();
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         char *version = "1.0";
         int num_lic = 1;
-        char *libpath = NULL;
+        int bytes_written = -1;
 
+        // create mock encrypted library as a temp dir
+        char *library_path = NULL;
+        _create_tmp_dir(&library_path, "test_mfl_license_check_mock_encrypted_library_XXXXXX");
+
+        // write decrypted package.mo to library
+        char *decrypted_package_mo_path = NULL;
+        FILE *decrypted_package_mo_fp = NULL;
+        bytes_written = asprintf(&decrypted_package_mo_path, "%s/%s", library_path, "package.mo");
+        ck_assert_int_ge(bytes_written, 0);
+        decrypted_package_mo_fp = fopen(decrypted_package_mo_path, "w");
+        fprintf(decrypted_package_mo_fp,
+            "package P\n"
+            "end P;\n"
+        );
+        status = fclose(decrypted_package_mo_fp);
+        ck_assert_int_eq(status, 0);
+
+        // write decrypted license file to library
+        char *decrypted_license_file_path = NULL;
+        FILE *decrypted_license_file_fp = NULL;
+        bytes_written = asprintf(&decrypted_license_file_path, "%s/%s", library_path, STR(MFL_JWT_LICENSE_FILE_FILENAME));
+        ck_assert_int_ge(bytes_written, 0);
+        decrypted_license_file_fp = fopen(decrypted_license_file_path, "w");
+        fprintf(decrypted_license_file_fp,
+            "model license\n"
+            "/*\n"
+            "%s\n"
+            "*/\n"
+            "end license;\n",
+            required_users_existant);
+        status = fclose(decrypted_license_file_fp);
+        ck_assert_int_eq(status, 0);
+
+        // encrypt package.mo to package.moc
+        char *encrypted_package_mo_path = NULL;
+        FILE *encrypted_package_mo_fp = NULL;
+        char *encrypt_package_mo_command = NULL;
+        bytes_written = asprintf(&encrypted_package_mo_path, "%s/%sc", library_path, "package.mo");
+        ck_assert_int_ge(bytes_written, 0);
+        bytes_written = asprintf(&encrypt_package_mo_command, "../../../encrypt_file %s %s %s", decrypted_package_mo_path, encrypted_package_mo_path, library_path);
+        ck_assert_int_ge(bytes_written, 0);
+        status = system(encrypt_package_mo_command);
+        ck_assert_int_eq(status , 0);
+
+        // encrypt license file from .mo to .moc
+        char *encrypted_license_file_path = NULL;
+        FILE *encrypted_license_file_fp = NULL;
+        char *encrypt_license_file_command = NULL;
+        bytes_written = asprintf(&encrypted_license_file_path, "%s/%sc", library_path, STR(MFL_JWT_LICENSE_FILE_FILENAME));
+        ck_assert_int_ge(bytes_written, 0);
+        bytes_written = asprintf(&encrypt_license_file_command, "../../../encrypt_file %s %s %s", decrypted_license_file_path, encrypted_license_file_path, library_path);
+        ck_assert_int_ge(bytes_written, 0);
+        status = system(encrypt_license_file_command);
+        ck_assert_int_eq(status , 0);
+
+
+        // do the test
         mfl = mfl_license_new();
         ck_assert_ptr_ne(mfl, NULL);
-        status = mfl_initialize(mfl, libpath);
+        status = mfl_initialize(mfl, library_path);
         if (status != MFL_SUCCESS) {
             fprintf(stderr, "%s\n", mfl_last_error(mfl));
         }
@@ -446,6 +548,24 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         status = mfl_checkin_feature(mfl, requested_feature_existant);
         ck_assert_int_eq(status, MFL_SUCCESS);
         mfl_license_free(mfl);
+
+        // cleanup
+        free(encrypt_package_mo_command);
+        status = unlink(encrypted_package_mo_path);
+        ck_assert_int_eq(status, 0);
+        free(encrypted_package_mo_path);
+        free(encrypt_package_mo_command);
+        status = unlink(encrypted_license_file_path);
+        ck_assert_int_eq(status, 0);
+        free(encrypted_license_file_path);
+        status = unlink(decrypted_license_file_path);
+        ck_assert_int_eq(status, 0);
+        free(decrypted_license_file_path);
+        status = unlink(decrypted_package_mo_path);
+        ck_assert_int_eq(status, 0);
+        free(decrypted_package_mo_path);
+        status = rmdir(library_path);
+        ck_assert_int_eq(status, 0);
     }
 
     // test "error: header claim 'kid' not found"

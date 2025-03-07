@@ -25,8 +25,10 @@ static int mfl_jwt_license_file_get_decrypted_license_file_contents(
     size_t bytes_read = 0;
     char *encrypted_license_file_contents = NULL;
 
+    // license file has the file extension .mo when it is not encrypted and
+    // has the file extension .moc after it is encrypted by packagetool
     status =
-        mfl_jwt_util_asprintf(error_msg_buffer, &license_file_path, "%s/%s",
+        mfl_jwt_util_asprintf(error_msg_buffer, &license_file_path, "%s/%sc",
                               libpath, STR(MFL_JWT_LICENSE_FILE_FILENAME));
     if (status != MFL_SUCCESS) {
         result = status;

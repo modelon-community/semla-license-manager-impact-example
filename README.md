@@ -43,7 +43,7 @@ semla-license-manager-impact-example/    # (this directory)
 
 ## Create a license file
 The example uses a text file called `license.mo` placed in the top level directory of the library next to the 'package.mo'-file. It is possible to 
-configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json).
+configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json) (but you need to keep the `.mo` file extension).
 
 The license file in this example is expected to have one line per username for the users to be licensed, e.g.,
 ```
