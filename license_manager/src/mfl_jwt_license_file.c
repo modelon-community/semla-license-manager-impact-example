@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 700
 #define _GNU_SOURCE
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -174,7 +175,7 @@ int mfl_jwt_license_file_get_required_usernames(char **required_usernames,
         result = status;
         goto error;
     }
-
+    assert(decrypted_license_file_contents != NULL); // silence warning about null pointer
     status = mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_contents(
         required_usernames, decrypted_license_file_contents, error_msg_buffer);
     if (status != MFL_SUCCESS) {
