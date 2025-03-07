@@ -382,7 +382,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             ck_abort_msg(error_msg_buffer);
         }
         ck_assert_int_eq(status, MFL_SUCCESS);
-        status = chdir("../../");
+        status = chdir("../");
         ck_assert_int_eq(status, 0);
     }
 
@@ -543,7 +543,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         encrypted_package_mo_filename =
             basename(encrypted_package_mo_filename_original);
         bytes_written =
-            asprintf(&encrypt_package_mo_command, "../../encrypt_file %s %s %s",
+            asprintf(&encrypt_package_mo_command, "../../../encrypt_file %s %s %s",
                      decrypted_package_mo_path, encrypted_package_mo_filename,
                      library_path);
         ck_assert_int_ge(bytes_written, 0);
@@ -567,7 +567,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         ck_assert_int_ge(bytes_written, 0);
         bytes_written =
             asprintf(&encrypt_license_file_command,
-                     "../../encrypt_file %s %s %s", decrypted_license_file_path,
+                     "../../../encrypt_file %s %s %s", decrypted_license_file_path,
                      encrypted_license_file_filename, library_path);
         ck_assert_int_ge(bytes_written, 0);
         status = system(encrypt_license_file_command);
