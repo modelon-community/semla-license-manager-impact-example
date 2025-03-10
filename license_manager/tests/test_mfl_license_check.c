@@ -1268,7 +1268,7 @@ START_TEST(test_mfl_jwt_ssl_util_get_timeout)
     {
         long actual_invalid_env_timeout;
         const char *expected_error_message_start =
-            "warning: environment variable value could not be parsed:";
+            "error: environment variable value could not be parsed:";
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
         setenv("MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT", "not_an_int",
                1);
