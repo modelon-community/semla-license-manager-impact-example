@@ -10,5 +10,7 @@
 			"path": "../openssl_keys"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"C_Cpp.autoAddFileAssociations": false
+	}
 }
