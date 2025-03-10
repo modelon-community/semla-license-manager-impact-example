@@ -54,6 +54,19 @@ name.lastname@company.com
 end license;
 ```
 
+## Add a features annotation in package.mo
+
+Add a `features` annotation in the `package.mo` file in the top level directory of your library, example:
+```
+package YourLibrary
+    annotation(
+      Protection(
+        features={"IMPACT_BASE"}
+      )
+    );
+end YourLibrary;
+```
+
 ## How to build
 In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
 
