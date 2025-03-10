@@ -138,6 +138,14 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
             if (line_end == NULL) {
                 line_end = strchr(line_start, '\0');
             }
+        } else {
+            // this happens when there's a Unix line ending before a Windows line ending
+            char *line_end2 = strchr(line_start, '\n');
+            if (line_end2 != NULL) {
+                if (line_end2 < line_end) {
+                    line_end = line_end2;
+                }
+            }
         }
 
         // Copy the line if it contains a '@'
