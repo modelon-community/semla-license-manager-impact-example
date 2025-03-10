@@ -88,7 +88,10 @@ static int make_request(char *url, MemoryStruct *chunk, char *error_msg_buffer)
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
     /* form and add authz header */
-    snprintf(header_buffer,HEADER_BUFFER, "impact-api-key: %s", getenv("MODELON_IMPACT_CLIENT_API_KEY"));
+    snprintf(header_buffer,HEADER_BUFFER, "%s: %s",
+        getenv("MODELON_LICENSE_HTTP_CREDENTIAL_HEADER"),
+        getenv("MODELON_LICENSE_HTTP_CREDENTIAL_VALUE")
+    );
 
     /* add this header */
     list = curl_slist_append(list, header_buffer);
