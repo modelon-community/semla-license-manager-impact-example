@@ -28,10 +28,12 @@ do
 done
 chmod +x ${JWK2KEY}
 
-CURL_RELEASE=curl-7_61_1.zip
-if [ ! -f ${CURL_RELEASE} ]; then
-    echo Downloading ${CURL_RELEASE}
-    curl -LO https://github.com/curl/curl/archive/refs/tags/${CURL_RELEASE}
+CURL_VERSION="$(curl --version | head -n1 | cut -f2 -d' ' | sed -e 's/\./_/g')"
+
+CURL_RELEASE="curl-${CURL_VERSION}.zip"
+if [ ! -f "${CURL_RELEASE}" ]; then
+    echo "Downloading ${CURL_RELEASE}"
+    curl -LO "https://github.com/curl/curl/archive/refs/tags/${CURL_RELEASE}"
 fi
 
 
