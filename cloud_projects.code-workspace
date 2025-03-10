@@ -1,10 +1,13 @@
 {
 	"folders": [
 		{
-			"path": ".."
+			"path": "."
 		},
 		{
-			"path": "../../SEMLA"
+			"path": "../SEMLA"
+		},
+		{
+			"path": "../openssl_keys"
 		}
 	],
 	"settings": {
