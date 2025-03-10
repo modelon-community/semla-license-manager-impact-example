@@ -202,11 +202,9 @@ int mfl_jwt_ssl_util_get_timeout(long *timeout, char *error_msg_buffer)
         if (errno || endptr == MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT ||
             *endptr != '\0') {
             snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-                    "warning: environment variable value could not be parsed: "
-                    "MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT=%s: "
-                    "using default connection timeout (in seconds) "
-                    "MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT_DEFAULT=%ld\n",
-                    MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT, *timeout);
+                    "error: environment variable value could not be parsed: "
+                    "MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT=%s",
+                    MODELON_LICENSE_USER_JWT_URL_CONNECTION_TIMEOUT);
             LOGE("%s\n", error_msg_buffer);
             return MFL_ERROR;
         } else {
