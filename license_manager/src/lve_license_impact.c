@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -23,6 +24,8 @@ mlle_license_new(const char *libpath,
         struct mlle_license *mlic = NULL;
 		mfl_license_t *mfl = NULL;
 		
+        assert(libpath != NULL);
+
         if ((mfl = mfl_license_new()) == NULL) {
             mlle_error_set(error, LICENSE_DOMAIN, LICENSE_ERROR_INITIALIZATION_FAILURE,
                 "Failed to allocate MFL license");
