@@ -30,8 +30,8 @@ mlle_license_new(const char *libpath,
         }
 
         if (mfl_initialize(mfl, libpath) == MFL_ERROR) {
-            mlle_error_set(error, LICENSE_DOMAIN, LICENSE_ERROR_INITIALIZATION_FAILURE,
-                "Failed to initialize MFL license interface");
+                mlle_error_set(error, LICENSE_DOMAIN, LICENSE_ERROR_CHECKOUT_FAILURE,
+                    mfl_last_error(mfl));
             goto error;
         }
 
@@ -103,7 +103,7 @@ mlle_license_checkout_feature(struct mlle_license *mlic,
     
 	if(mfl_checkout_feature(mlic->mfl, the_feature, the_version, num_licenses) == MFL_ERROR) {
         mlle_error_set(error, LICENSE_DOMAIN, LICENSE_ERROR_CHECKOUT_FAILURE,
-            mfl_last_error(mlic->mfl)); //TODO: error can be NULL, code in SEMLA doesn't handle that, a test should trigger this case
+            mfl_last_error(mlic->mfl));
         goto error;
     }
     result = MLLE_LIC_SUCCESS;

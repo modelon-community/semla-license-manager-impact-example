@@ -30,7 +30,7 @@ typedef struct mfl_license mfl_license_t;
 mfl_license_t * mfl_license_new();
 
 /* Initialize licensing object */
-int mfl_initialize(mfl_license_t *mfl, char *libpath);
+int mfl_initialize(mfl_license_t *mfl, const char *libpath);
 
 /* Releaser allocated resources */
 int mfl_license_free(mfl_license_t *mfl);

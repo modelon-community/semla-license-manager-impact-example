@@ -71,6 +71,16 @@ int mfl_jwt_initialize(mfl_module_data_t *module_data, char *libpath)
     if (mfl == NULL) {
         return MFL_ERROR;
     }
+
+    status = mfl_jwt_check_any_jwt_env_var_set();
+    if (status != MFL_SUCCESS) {
+        snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
+        "error: need to set one of the environment variables MODELON_LICENSE_USER_JWT or MODELON_LICENSE_USER_JWT_URL\n");
+        set_error(mfl, error_msg_buffer);
+        result = status;
+        goto error;
+    }
+
     status =
         mfl_jwt_initialize_required_usernames(mfl, libpath, error_msg_buffer);
     if (status != MFL_SUCCESS) {
@@ -140,6 +150,7 @@ int mfl_jwt_check_any_jwt_env_var_set()
     if (jwt_url != NULL) {
         return MFL_SUCCESS;
     }
+
     return MFL_ERROR;
 }
 

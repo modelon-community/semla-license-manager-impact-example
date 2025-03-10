@@ -47,21 +47,9 @@ mfl_license_t * mfl_license_new()
     return mfl_license;
 }
 
-int mfl_initialize(mfl_license_t *mfl, char *libpath)
+int mfl_initialize(mfl_license_t *mfl, const char *libpath)
 {
-    int status            = MFL_SUCCESS;
-
-    if (mfl_jwt_check_any_jwt_env_var_set() == MFL_SUCCESS) {
-        LOGE("*** Using MFL JWT ***\n")
-        status = setup_jwt(mfl, libpath);
-    }
-    else {
-        LOGE("error: need to set one of the environment variables MODELON_LICENSE_USER_JWT or MODELON_LICENSE_USER_JWT_URL\n")
-        status = MFL_ERROR;
-    }
-
-out:
-    return status;
+    return setup_jwt(mfl, libpath);
 }
 
 int mfl_license_free(mfl_license_t *mfl)
@@ -127,10 +115,17 @@ out:
 
 char* mfl_last_error(mfl_license_t *mfl)
 {
+    char *result = NULL;
     if (mfl && mfl->module_data)
-        return mfl->get_last_error(mfl->module_data);
-    else
-        return mfl->latest_error;
+        result = mfl->get_last_error(mfl->module_data);
+    else if (mfl) {
+        result = mfl->latest_error;
+    }
+    if (result == NULL) {
+        // code in SEMLA doesn't handle when error is NULL 
+        result = "";
+    }
+    return result;
 }
 
 static void free_mfl_error(mfl_license_t *mfl) {
