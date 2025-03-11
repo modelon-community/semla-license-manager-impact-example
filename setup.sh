@@ -28,7 +28,9 @@ do
 done
 chmod +x ${JWK2KEY}
 
-CURL_VERSION="$(curl --version | head -n1 | cut -f2 -d' ' | sed -e 's/\./_/g')"
+# Command to get current curl version (when updating to a new version here, also update filename and sha256 checksum in the cmake build system (search for the old curl version to find the locations to update)):
+#    curl --version | head -n1 | cut -f2 -d' ' | sed -e 's/\./_/g'
+CURL_VERSION="7_61_1"
 
 CURL_RELEASE="curl-${CURL_VERSION}.zip"
 if [ ! -f "${CURL_RELEASE}" ]; then
