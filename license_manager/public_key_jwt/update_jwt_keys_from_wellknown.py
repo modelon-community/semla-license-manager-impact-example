@@ -39,7 +39,7 @@ def main():
     # generate public_keys_jwt_key_id.txt
     with open(JWKS_JSON_FILE, encoding='utf-8') as input_file:
         with open((f"{JWT_KEYS_DIR}/public_keys_jwt_key_id.txt"), 'w', encoding='utf-8') as output_file:
-            output_file.write(json.load(input_file)['keys'][0]['kid']+"\n")
+            output_file.write("\n".join(key['kid'] for key in json.load(input_file)['keys']) + "\n")
 
 if __name__ == '__main__':
     main()
