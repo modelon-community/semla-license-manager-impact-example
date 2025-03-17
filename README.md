@@ -54,6 +54,8 @@ name.lastname@company.com
 end license;
 ```
 
+The license manager searches for the first line that starts with `/*` in the file, and expects all lines to contain a username until it encounters a line that starts with `*/`.
+
 ## How to build
 In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
 
