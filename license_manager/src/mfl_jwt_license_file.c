@@ -72,6 +72,9 @@ static int mfl_jwt_license_file_get_decrypted_license_file_contents(
 
     result = MFL_SUCCESS;
 error:
+    if (fp != NULL) {
+        fclose(fp);
+    }
     free(license_file_relative_path);
     free(encrypted_license_file_contents);
     free(license_file_path);
