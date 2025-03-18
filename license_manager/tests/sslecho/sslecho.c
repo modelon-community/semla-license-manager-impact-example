@@ -1,5 +1,5 @@
 /*
- *  Copyright 2022 Modelon AB
+ *  Copyright (C) 2022 Modelon AB
  *  Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  *  Licensed under the Apache License 2.0 (the "License").  You may not use
