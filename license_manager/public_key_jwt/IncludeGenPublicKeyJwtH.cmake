@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 # Generate header files for authorized license servers.
 #
 # usage: 

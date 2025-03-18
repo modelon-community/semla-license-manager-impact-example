@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR) # using cmake_path() which is only available since CMake version 3.20 
 
 # License manager common code

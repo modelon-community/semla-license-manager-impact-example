@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 if (NOT JWT_PUBLIC_KEYS_DIRECTORY)
     message(FATAL_ERROR "JWT_PUBLIC_KEYS_DIRECTORY is not set")
 endif()

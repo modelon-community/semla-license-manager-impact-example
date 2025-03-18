@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 set(LIBJWT_ARCHIVE_URL "file://${CMAKE_SOURCE_DIR}/SemlaLibJWT-1.0.14-linux64-gcc485.zip")
 set(LIBJWT_ARCHIVE_EXPECTED_HASH_SHA256 "c4dd4c93a1e493b75014c09e04da118227b88aec5fc7a4772627cf05ab05cdfd")
 

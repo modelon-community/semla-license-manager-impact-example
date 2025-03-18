@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 set(BITS "64")
 set(GLOBAL_LICENSE_FEATURE "IMPACT_LIBRARIES")
 
