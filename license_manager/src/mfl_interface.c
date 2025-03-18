@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #define _XOPEN_SOURCE 700
 #include <stdlib.h>
 #include <string.h>

@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #include <stdio.h>
 #include <string.h>
 

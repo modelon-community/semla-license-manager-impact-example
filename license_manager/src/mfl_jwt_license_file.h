@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #ifndef MFL_jwt_license_file_H_
 #define MFL_jwt_license_file_H_
 

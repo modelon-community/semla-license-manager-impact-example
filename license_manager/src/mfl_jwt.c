@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #define _XOPEN_SOURCE 700
 #define _GNU_SOURCE
 #include <errno.h>

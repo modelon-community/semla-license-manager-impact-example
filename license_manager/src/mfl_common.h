@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #ifndef MFL_COMMON_H_
 #define MFL_COMMON_H_
 

@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <assert.h>
