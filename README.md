@@ -83,7 +83,7 @@ Next step is to add a Modelon Impact specific project json file into the package
 
 > [!IMPORTANT]  
 > The version information in the `project.json` file is used for tracking dependencies
-> of workspaces and compiled models. It needs to follow semantic version specification
+> of workspaces and compiled models. It needs to follow the Semantic Versioning specification
 > (https://semver.org).
 > You MUST always update the project version when releasing the library to users. The project version
 > does not need to match Modelica library version.
