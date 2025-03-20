@@ -189,7 +189,7 @@ The URL to wellknown is set to the Modelon Cloud instance of Impact by default. 
 Good starting points for understanding how this works is to look at the tests, in particular:
 - [../SEMLA/src/tests/test_tool.c](../SEMLA/src/tests/test_tool.c)
   - (or the online version [SEMLA: test_tool.c](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/tests/test_tool.c)) tests how a modelica tool uses the LVE (LVE = Library Vendor Executable -- the executable that is responsible for licensing and encryption). The LVE includes the License Manager.
-- [./license_manager/tests/test_license_manager.cpp](./license_manager/tests/test_license_manager.cpp)
+- [./license_manager/tests/test_mfl_license_check.c](./license_manager/tests/test_mfl_license_check.c)
   - tests only the License Manager, without embedding it into an LVE.
 
 ## How to release
