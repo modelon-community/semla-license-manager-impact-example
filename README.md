@@ -187,10 +187,11 @@ The URL to wellknown is set to the Modelon Cloud instance of Impact by default. 
 ## How to understand
 
 Good starting points for understanding how this works is to look at the tests, in particular:
-- [../SEMLA/src/tests/test_tool.c](../SEMLA/src/tests/test_tool.c)
-  - (or the online version [SEMLA: test_tool.c](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/tests/test_tool.c)) tests how a modelica tool uses the LVE (LVE = Library Vendor Executable -- the executable that is responsible for licensing and encryption). The LVE includes the License Manager.
 - [./license_manager/tests/test_mfl_license_check.c](./license_manager/tests/test_mfl_license_check.c)
   - tests only the License Manager, without embedding it into an LVE.
+- [../SEMLA/src/tests/test_tool.c](../SEMLA/src/tests/test_tool.c) 
+  - (the online version of the test is available at [SEMLA: test_tool.c](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/tests/test_tool.c)) tests how a modelica tool uses the LVE (LVE = Library Vendor Executable -- the executable that is responsible for licensing and encryption). The LVE includes the License Manager.
+  - This test is disabled when building this License Manager. If you want to run this test, build SEMLA using the CMake build configuration in the SEMLA repo instead (this uses another License Manager), see build instructions in [../SEMLA/src/README.md](../SEMLA/src/README.md) (online version: [SEMLA: src/README.md](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/README.md)).
 
 ## How to release
 
