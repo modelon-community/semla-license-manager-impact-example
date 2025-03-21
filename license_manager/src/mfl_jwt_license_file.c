@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2022 Modelon AB
  */
 #define _XOPEN_SOURCE 700
@@ -86,7 +86,11 @@ error:
 
 /** Populates required_usernames from decrypted_license_file_contents.
  *
- * All lines that contain a '@' are considered a username.
+ * Searches for the first line that starts with '/' and '*' in the file,
+ * and expects all lines to contain a username until it encounters
+ * a line that starts with '*' and '/'
+ * (We say "'*' and '/'" because otherwise
+ * the two-character sequence terminates this C doc comment).
  * Filters out all lines that are not usernames.
  * Ensures that the only separator between usernames is '\n'
  * (i.e. replaces Windows and Mac line endings with Unix line endings)
@@ -110,6 +114,7 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
     char *line_start = decrypted_license_file_contents;
     char *line_end = NULL;
     char *at_sign = NULL;
+    int read_usernames = 0;
     size_t bytes_read = -1;
     char *required_usernames_p = NULL;
     char *line_end_in_required_usernames = NULL;
@@ -126,16 +131,6 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
 
     required_usernames_p = *required_usernames;
     do {
-        // Only copy lines that contain a '@'
-        if (at_sign < line_start) {
-            at_sign = strchr(line_start, '@');
-            if (at_sign == NULL) {
-                // If there are no more lines with a '@' left,
-                // then we are done.
-                break;
-            }
-        }
-
         // Find the line ending
         line_end = strchr(line_start, '\r');
         if (line_end == NULL) {
@@ -144,7 +139,8 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
                 line_end = strchr(line_start, '\0');
             }
         } else {
-            // this happens when there's a Unix line ending before a Windows line ending
+            // this happens when there's a Unix line ending before a Windows
+            // line ending
             char *line_end2 = strchr(line_start, '\n');
             if (line_end2 != NULL) {
                 if (line_end2 < line_end) {
@@ -153,10 +149,16 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
             }
         }
 
-        // Copy the line if it contains a '@'
-        if (at_sign < line_end) {
-            // bytes_read also includes the line ending itself
-            bytes_read = line_end - line_start + 1;
+        // Read a line
+        // bytes_read also includes the line ending itself
+        bytes_read = line_end - line_start + 1;
+
+        // line is end of comment => stop reading usernames
+        if (0 == strncmp(line_start, "*/", bytes_read - 1)) {
+            break;
+        }
+
+        if (read_usernames) {
             required_usernames_sz += bytes_read;
             // Reallocate output buffer if it is too small
             if (required_usernames_sz >= required_usernames_capacity) {
@@ -180,17 +182,25 @@ mfl_jwt_license_file_filter_out_required_usernames_from_decrypted_license_file_c
             // Fix the line endings in the output buffer, we only want to output
             // Unix line endings (\n)
             if (*line_end == '\r') {
-                char *line_end_plus_one = line_end + 1;
                 // replace Windows (\r\n) and Mac (\r) line endings with Unix
                 // line endings (\n)
                 *line_end_in_required_usernames = '\n';
-                // fast-forward the input buffer pointer to the '\n' in Windows
-                // line endings
-                if (*line_end_plus_one == '\n') {
-                    line_end = line_end_plus_one;
-                }
             }
             required_usernames_p = line_end_in_required_usernames + 1;
+        }
+
+        // line is start of comment => start reading usernames (on next line)
+        if (0 == strncmp(line_start, "/*", bytes_read - 1)) {
+            read_usernames = 1;
+        }
+
+        if (*line_end == '\r') {
+            char *line_end_plus_one = line_end + 1;
+            // fast-forward the input buffer pointer to the '\n' in Windows
+            // line endings
+            if (*line_end_plus_one == '\n') {
+                line_end = line_end_plus_one;
+            }
         }
         line_start = line_end + 1;
     } while (*line_end != '\0');
