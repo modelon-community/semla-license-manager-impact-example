@@ -25,6 +25,10 @@ if (NOT (MFL_JWT_LICENSE_FILE_FILENAME MATCHES ".*\.mo$"))
 endif()
 target_compile_definitions(license_manager PRIVATE MFL_JWT_LICENSE_FILE_FILENAME=${MFL_JWT_LICENSE_FILE_FILENAME})
 
+if(MFL_JWT_CHECK_FEATURES_LIST)
+    target_compile_definitions(license_manager PRIVATE MFL_JWT_CHECK_FEATURES_LIST=${MFL_JWT_CHECK_FEATURES_LIST})
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/../jansson/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../libjwt/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../libcurl/CMakeLists.txt)

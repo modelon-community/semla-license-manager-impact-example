@@ -924,6 +924,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         free(actual_error_message_start);
     }
 
+#ifdef MFL_JWT_CHECK_FEATURES_LIST
     // test "error: jwt does not contain claim: features"
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
@@ -1155,6 +1156,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
                          expected_error_message_start);
         free(actual_error_message_start);
     }
+#endif
 
     // test "error: User '%s' is not licensed to use this library."
     {

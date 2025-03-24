@@ -673,6 +673,7 @@ int mfl_jwt_component_license_check(const char *requested_feature,
     }
     }
 
+#ifdef MFL_JWT_CHECK_FEATURES_LIST
     // check that the "features" list contains the requested feature
     {
         features_list_json_str = jwt_get_grants_json(jwt, "features");
@@ -853,6 +854,7 @@ int mfl_jwt_component_license_check(const char *requested_feature,
             goto error;
         }
     }
+#endif
 
     // check that the "user" object contains "username" in licensed_users
     {
