@@ -674,104 +674,159 @@ int mfl_jwt_component_license_check(const char *requested_feature,
     }
 
     // check that the "features" list contains the requested feature
-    features_list_json_str = jwt_get_grants_json(jwt, "features");
-    if (features_list_json_str == NULL) {
-        const char *error_msg_start = NULL;
-        const char *error_msg_description_jwt = NULL;
-        char *jwt_dump_str_result = NULL;
-        char *error_msg_buffer_current_position = error_msg_buffer;
-        size_t error_msg_buffer_remaining_size = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        error_msg_start = "error: jwt does not contain claim: features\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_start);
-        error_msg_description_jwt = "\njwt:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_description_jwt);
-        jwt_dump_str_result = jwt_dump_str(jwt, 1);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, jwt_dump_str_result);
-        free(jwt_dump_str_result);
-        goto error;
-    }
-    features_list_json = json_loads(features_list_json_str, 0, NULL);
-    if (features_list_json == NULL) {
-        const char *error_msg_start = NULL;
-        const char *error_msg_description_jwt = NULL;
-        char *jwt_dump_str_result = NULL;
-        char *error_msg_buffer_current_position = error_msg_buffer;
-        size_t error_msg_buffer_remaining_size = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        error_msg_start =
-            "error: failed to load json: jwt claim 'features' json input:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_start);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, features_list_json_str);
-        error_msg_description_jwt = "\n\njwt:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_description_jwt);
-        jwt_dump_str_result = jwt_dump_str(jwt, 1);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, jwt_dump_str_result);
-        free(jwt_dump_str_result);
-        goto error;
-    }
-    if (!json_is_array(features_list_json)) {
-        const char *error_msg_start = NULL;
-        const char *error_msg_description_jwt = NULL;
-        char *jwt_dump_str_result = NULL;
-        char *error_msg_buffer_current_position = error_msg_buffer;
-        size_t error_msg_buffer_remaining_size = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        error_msg_start =
-            "error: not a json array: jwt claim 'features' json input:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_start);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, features_list_json_str);
-        error_msg_description_jwt = "\n\njwt:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_description_jwt);
-        jwt_dump_str_result = jwt_dump_str(jwt, 1);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, jwt_dump_str_result);
-        free(jwt_dump_str_result);
-        goto error;
-    }
-    json_array_foreach(features_list_json, i, feature_json)
     {
-        feature_json_str =
-            json_string_value(feature_json); // does not need to be freed
-        if (feature_json_str == NULL) {
-            char *json_dumps_result = NULL;
-            char *jwt_dump_str_result = NULL;
-            const char *error_msg_start;
-            const char *error_msg_middle = NULL;
+        features_list_json_str = jwt_get_grants_json(jwt, "features");
+        if (features_list_json_str == NULL) {
+            const char *error_msg_start = NULL;
             const char *error_msg_description_jwt = NULL;
-            const char *error_msg_description_end;
+            char *jwt_dump_str_result = NULL;
             char *error_msg_buffer_current_position = error_msg_buffer;
             size_t error_msg_buffer_remaining_size =
                 MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-
-            error_msg_start = "error: not a json string: value: \n";
+            error_msg_start = "error: jwt does not contain claim: features\n";
             _snprintf_and_increment_error_msg_buffer(
                 &error_msg_buffer_current_position,
                 &error_msg_buffer_remaining_size, error_msg_start);
-            json_dumps_result = json_dumps(feature_json, JSON_ENCODE_ANY);
+            error_msg_description_jwt = "\njwt:\n";
             _snprintf_and_increment_error_msg_buffer(
                 &error_msg_buffer_current_position,
-                &error_msg_buffer_remaining_size, json_dumps_result);
-            free(json_dumps_result);
+                &error_msg_buffer_remaining_size, error_msg_description_jwt);
+            jwt_dump_str_result = jwt_dump_str(jwt, 1);
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, jwt_dump_str_result);
+            free(jwt_dump_str_result);
+            goto error;
+        }
+        features_list_json = json_loads(features_list_json_str, 0, NULL);
+        if (features_list_json == NULL) {
+            const char *error_msg_start = NULL;
+            const char *error_msg_description_jwt = NULL;
+            char *jwt_dump_str_result = NULL;
+            char *error_msg_buffer_current_position = error_msg_buffer;
+            size_t error_msg_buffer_remaining_size =
+                MFL_JWT_ERROR_MSG_BUFFER_SIZE;
+            error_msg_start = "error: failed to load json: jwt claim "
+                              "'features' json input:\n";
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, error_msg_start);
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, features_list_json_str);
+            error_msg_description_jwt = "\n\njwt:\n";
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, error_msg_description_jwt);
+            jwt_dump_str_result = jwt_dump_str(jwt, 1);
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, jwt_dump_str_result);
+            free(jwt_dump_str_result);
+            goto error;
+        }
+        if (!json_is_array(features_list_json)) {
+            const char *error_msg_start = NULL;
+            const char *error_msg_description_jwt = NULL;
+            char *jwt_dump_str_result = NULL;
+            char *error_msg_buffer_current_position = error_msg_buffer;
+            size_t error_msg_buffer_remaining_size =
+                MFL_JWT_ERROR_MSG_BUFFER_SIZE;
+            error_msg_start =
+                "error: not a json array: jwt claim 'features' json input:\n";
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, error_msg_start);
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, features_list_json_str);
+            error_msg_description_jwt = "\n\njwt:\n";
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, error_msg_description_jwt);
+            jwt_dump_str_result = jwt_dump_str(jwt, 1);
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, jwt_dump_str_result);
+            free(jwt_dump_str_result);
+            goto error;
+        }
+        json_array_foreach(features_list_json, i, feature_json)
+        {
+            feature_json_str =
+                json_string_value(feature_json); // does not need to be freed
+            if (feature_json_str == NULL) {
+                char *json_dumps_result = NULL;
+                char *jwt_dump_str_result = NULL;
+                const char *error_msg_start;
+                const char *error_msg_middle = NULL;
+                const char *error_msg_description_jwt = NULL;
+                const char *error_msg_description_end;
+                char *error_msg_buffer_current_position = error_msg_buffer;
+                size_t error_msg_buffer_remaining_size =
+                    MFL_JWT_ERROR_MSG_BUFFER_SIZE;
 
+                error_msg_start = "error: not a json string: value: \n";
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size, error_msg_start);
+                json_dumps_result = json_dumps(feature_json, JSON_ENCODE_ANY);
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size, json_dumps_result);
+                free(json_dumps_result);
+
+                error_msg_middle = "\n\njwt claim 'features' json input:\n";
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size, error_msg_middle);
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size, features_list_json_str);
+
+                error_msg_description_jwt = "\n\njwt:\n";
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size,
+                    error_msg_description_jwt);
+                jwt_dump_str_result = jwt_dump_str(jwt, 1);
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size, jwt_dump_str_result);
+                free(jwt_dump_str_result);
+
+                error_msg_description_end = "\n";
+                _snprintf_and_increment_error_msg_buffer(
+                    &error_msg_buffer_current_position,
+                    &error_msg_buffer_remaining_size,
+                    error_msg_description_end);
+                LOGE("%s\n", error_msg_buffer);
+                goto error;
+            }
+            if (strcmp(feature_json_str, requested_feature) == 0) {
+                requested_feature_found = 1;
+                break;
+            }
+        }
+        if (!requested_feature_found) {
+            char *error_msg_buffer_current_position = error_msg_buffer;
+            size_t error_msg_buffer_remaining_size =
+                MFL_JWT_ERROR_MSG_BUFFER_SIZE;
+            const char *error_msg_start = NULL;
+            const char *error_msg_middle = NULL;
+            const char *error_msg_description_jwt = NULL;
+            char *jwt_dump_str_result = NULL;
+            const char *error_msg_description_end = NULL;
+            char error_msg_input_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
+            size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
+            memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
+            error_msg_start = "error: requested feature not found in jwt claim "
+                              "'features': requested feature: %s";
+            snprintf(error_msg_input_buffer, error_msg_input_buffer_sz,
+                     error_msg_start, requested_feature);
+            _snprintf_and_increment_error_msg_buffer(
+                &error_msg_buffer_current_position,
+                &error_msg_buffer_remaining_size, error_msg_input_buffer);
             error_msg_middle = "\n\njwt claim 'features' json input:\n";
             _snprintf_and_increment_error_msg_buffer(
                 &error_msg_buffer_current_position,
@@ -797,53 +852,6 @@ int mfl_jwt_component_license_check(const char *requested_feature,
             LOGE("%s\n", error_msg_buffer);
             goto error;
         }
-        if (strcmp(feature_json_str, requested_feature) == 0) {
-            requested_feature_found = 1;
-            break;
-        }
-    }
-    if (!requested_feature_found) {
-        char *error_msg_buffer_current_position = error_msg_buffer;
-        size_t error_msg_buffer_remaining_size = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        const char *error_msg_start = NULL;
-        const char *error_msg_middle = NULL;
-        const char *error_msg_description_jwt = NULL;
-        char *jwt_dump_str_result = NULL;
-        const char *error_msg_description_end = NULL;
-        char error_msg_input_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
-        size_t error_msg_input_buffer_sz = MFL_JWT_ERROR_MSG_BUFFER_SIZE;
-        memset(error_msg_input_buffer, '\0', error_msg_input_buffer_sz);
-        error_msg_start = "error: requested feature not found in jwt claim "
-                          "'features': requested feature: %s";
-        snprintf(error_msg_input_buffer, error_msg_input_buffer_sz,
-                 error_msg_start, requested_feature);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_input_buffer);
-        error_msg_middle = "\n\njwt claim 'features' json input:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_middle);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, features_list_json_str);
-
-        error_msg_description_jwt = "\n\njwt:\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_description_jwt);
-        jwt_dump_str_result = jwt_dump_str(jwt, 1);
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, jwt_dump_str_result);
-        free(jwt_dump_str_result);
-
-        error_msg_description_end = "\n";
-        _snprintf_and_increment_error_msg_buffer(
-            &error_msg_buffer_current_position,
-            &error_msg_buffer_remaining_size, error_msg_description_end);
-        LOGE("%s\n", error_msg_buffer);
-        goto error;
     }
 
     // check that the "user" object contains "username" in licensed_users
