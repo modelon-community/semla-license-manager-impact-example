@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2022 Modelon AB
  */
 #define _XOPEN_SOURCE 700
@@ -23,7 +23,7 @@
 
 struct mfl_license_jwt {
     char *error_msg;
-    char *required_usernames;
+    char *licensed_users;
 };
 
 // pre-definitions
@@ -45,15 +45,15 @@ mfl_license_jwt_t *mfl_jwt_license_new()
     return mfl_license;
 }
 
-static int mfl_jwt_initialize_required_usernames(mfl_license_jwt_t *mfl,
-                                                 char *libpath,
-                                                 char *error_msg_buffer)
+static int mfl_jwt_initialize_licensed_users(mfl_license_jwt_t *mfl,
+                                             char *libpath,
+                                             char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
 
-    status = mfl_jwt_license_file_get_required_usernames(
-        &(mfl->required_usernames), libpath, error_msg_buffer);
+    status = mfl_jwt_license_file_get_licensed_users(&(mfl->licensed_users),
+                                                     libpath, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         result = status;
         goto error;
@@ -78,14 +78,14 @@ int mfl_jwt_initialize(mfl_module_data_t *module_data, char *libpath)
     status = mfl_jwt_check_any_jwt_env_var_set();
     if (status != MFL_SUCCESS) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
-        "error: need to set one of the environment variables MODELON_LICENSE_USER_JWT or MODELON_LICENSE_USER_JWT_URL\n");
+                 "error: need to set one of the environment variables "
+                 "MODELON_LICENSE_USER_JWT or MODELON_LICENSE_USER_JWT_URL\n");
         set_error(mfl, error_msg_buffer);
         result = status;
         goto error;
     }
 
-    status =
-        mfl_jwt_initialize_required_usernames(mfl, libpath, error_msg_buffer);
+    status = mfl_jwt_initialize_licensed_users(mfl, libpath, error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
         result = status;
@@ -114,7 +114,7 @@ int mfl_jwt_checkout_feature(mfl_module_data_t *module_data,
     if (mfl == NULL) {
         return MFL_ERROR;
     }
-    status = mfl_jwt_component_license_check(feature, mfl->required_usernames,
+    status = mfl_jwt_component_license_check(feature, mfl->licensed_users,
                                              error_msg_buffer);
     if (status != MFL_SUCCESS) {
         set_error(mfl, error_msg_buffer);
@@ -491,31 +491,32 @@ error:
     return status;
 }
 
-static int mfl_jwt_check_username_in_required_usernames(
-    const char *username, char *required_usernames, char *error_msg_buffer)
+static int mfl_jwt_check_username_in_licensed_users(const char *username,
+                                                    char *licensed_users,
+                                                    char *error_msg_buffer)
 {
     int result = MFL_ERROR;
     int status = MFL_ERROR;
     int found_username = MFL_ERROR;
     int found_last_line_ending = MFL_ERROR;
-    char *required_username = NULL;
+    char *licensed_user = NULL;
     char *line_start = NULL;
     char *line_end = NULL;
     size_t bytes_read = -1;
-    char *required_usernames_dup = NULL;
+    char *licensed_users_dup = NULL;
 
-    // Only modify a copy of the input required_usernames, instead of modifying
+    // Only modify a copy of the input licensed_users, instead of modifying
     // the input itself
-    required_usernames_dup = strdup(required_usernames);
-    if (required_usernames_dup == NULL) {
+    licensed_users_dup = strdup(licensed_users);
+    if (licensed_users_dup == NULL) {
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
                  "error: Could not allocate "
-                 "memory for required_usernames_dup");
+                 "memory for licensed_users_dup");
         result = MFL_ERROR;
         goto error;
     }
-    line_start = required_usernames_dup;
-    // Find username in required_usernames (dup)
+    line_start = licensed_users_dup;
+    // Find username in licensed_users (dup)
     do {
         // Find the line ending
         line_end = strchr(line_start, '\n');
@@ -526,9 +527,9 @@ static int mfl_jwt_check_username_in_required_usernames(
         *line_end = '\0'; // update the line ending to '\0' so that we can use
                           // string comparison
 
-        required_username = line_start;
+        licensed_user = line_start;
         // use case insensitive string comparison for the username
-        if (strcasecmp(username, required_username) == 0) {
+        if (strcasecmp(username, licensed_user) == 0) {
             found_username = MFL_SUCCESS;
         }
 
@@ -540,18 +541,18 @@ static int mfl_jwt_check_username_in_required_usernames(
         snprintf(error_msg_buffer, MFL_JWT_ERROR_MSG_BUFFER_SIZE,
                  "error: User '%s' is not licensed to use this library."
                  "The users that are licensed to use this library are:\n%s",
-                 username, required_usernames);
+                 username, licensed_users);
         result = status;
         goto error;
     }
     result = status;
 error:
-    free(required_usernames_dup);
+    free(licensed_users_dup);
     return result;
 }
 
 int mfl_jwt_component_license_check(const char *requested_feature,
-                                    char *required_usernames,
+                                    char *licensed_users,
                                     char *error_msg_buffer)
 {
     int result = MFL_ERROR;
@@ -845,7 +846,7 @@ int mfl_jwt_component_license_check(const char *requested_feature,
         goto error;
     }
 
-    // check that the "user" object contains "username" in required_usernames
+    // check that the "user" object contains "username" in licensed_users
     {
         user_object_json_str = jwt_get_grants_json(jwt, "user");
         if (user_object_json_str == NULL) {
@@ -972,8 +973,8 @@ int mfl_jwt_component_license_check(const char *requested_feature,
             goto error;
         }
 
-        status = mfl_jwt_check_username_in_required_usernames(
-            username, required_usernames, error_msg_buffer);
+        status = mfl_jwt_check_username_in_licensed_users(
+            username, licensed_users, error_msg_buffer);
         if (status != MFL_SUCCESS) {
             result = status;
             goto error;
