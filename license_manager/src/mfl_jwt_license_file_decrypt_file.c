@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 
 /* libcrypto-compat.h must be first */
 #include "libcrypto-compat.h"

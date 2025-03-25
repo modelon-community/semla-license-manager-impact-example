@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #include "lmc_feature.h"
 
 #include <stdlib.h>

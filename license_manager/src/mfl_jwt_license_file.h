@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2022 Modelon AB
+ */
 #ifndef MFL_jwt_license_file_H_
 #define MFL_jwt_license_file_H_
 
@@ -6,13 +9,14 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
- * @param required_usernames contains the required user from the license file separated by '\n'
- * @return MFL_SUCCESS on success, or MFL_ERROR on failure. required_usernames. Caller
- * must free() required_usernames.
+ * @param licensed_users contains the licensed users from the license file
+ * separated by '\n'
+ * @return MFL_SUCCESS on success, or MFL_ERROR on failure. licensed_users.
+ * Caller must free() licensed_users.
  */
-int mfl_jwt_license_file_get_required_usernames(char **required_usernames,
-                                                char *libpath,
-                                                char *error_msg_buffer);
+int mfl_jwt_license_file_get_licensed_users(char **licensed_users,
+                                            char *libpath,
+                                            char *error_msg_buffer);
 
 #ifdef __cplusplus
 }

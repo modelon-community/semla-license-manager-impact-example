@@ -11,6 +11,7 @@
             "hidden": true,
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
+                "SKIP_TEST_TOOL_TESTS": "1",
                 "JWT_PUBLIC_KEYS_DIRECTORY": "${sourceDir}/jwt_keys",
                 "MFL_JWT_LICENSE_FILE_FILENAME": "license.mo"
             }

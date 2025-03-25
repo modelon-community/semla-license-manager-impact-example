@@ -1,4 +1,5 @@
 #! /bin/bash
+# Copyright (C) 2022 Modelon AB
 set -euo pipefail
 
 JANSSON_ARCHIVE_FILENAME="jansson-1.0.4.zip"

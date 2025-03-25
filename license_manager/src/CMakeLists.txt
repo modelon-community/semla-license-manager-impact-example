@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR) # using cmake_path() which is only available since CMake version 3.20 
 
 # License manager common code
@@ -23,6 +24,10 @@ if (NOT (MFL_JWT_LICENSE_FILE_FILENAME MATCHES ".*\.mo$"))
     message(FATAL_ERROR "error: filename must end with the extension '.mo': MFL_JWT_LICENSE_FILE_FILENAME=${MFL_JWT_LICENSE_FILE_FILENAME}")
 endif()
 target_compile_definitions(license_manager PRIVATE MFL_JWT_LICENSE_FILE_FILENAME=${MFL_JWT_LICENSE_FILE_FILENAME})
+
+if(MFL_JWT_CHECK_FEATURES_LIST)
+    target_compile_definitions(license_manager PRIVATE MFL_JWT_CHECK_FEATURES_LIST=${MFL_JWT_CHECK_FEATURES_LIST})
+endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../jansson/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/../libjwt/CMakeLists.txt)

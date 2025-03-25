@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 cmake_minimum_required (VERSION 3.20 FATAL_ERROR)
 
 # project(MFL_TESTS C)

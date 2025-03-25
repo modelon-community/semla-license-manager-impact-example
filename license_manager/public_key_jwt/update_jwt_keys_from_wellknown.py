@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 import argparse
 import os
 import json

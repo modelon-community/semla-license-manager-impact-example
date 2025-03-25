@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) 2022 Modelon AB
 set -euo pipefail
 
 SCRIPTFILE=$(readlink -f "${BASH_SOURCE[0]}")

@@ -54,18 +54,7 @@ name.lastname@company.com
 end license;
 ```
 
-## Add a features annotation in package.mo
-
-Add a `features` annotation in the `package.mo` file in the top level directory of your library, example:
-```
-package YourLibrary
-    annotation(
-      Protection(
-        features={"IMPACT_BASE"}
-      )
-    );
-end YourLibrary;
-```
+The license manager searches for the first line that starts with `/*` in the file, and expects all lines to contain a username until it encounters a line that starts with `*/`.
 
 ## How to build
 In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
@@ -94,7 +83,7 @@ Next step is to add a Modelon Impact specific project json file into the package
 
 > [!IMPORTANT]  
 > The version information in the `project.json` file is used for tracking dependencies
-> of workspaces and compiled models. It needs to follow semantic version specification
+> of workspaces and compiled models. It needs to follow the Semantic Versioning specification
 > (https://semver.org).
 > You MUST always update the project version when releasing the library to users. The project version
 > does not need to match Modelica library version.
@@ -198,10 +187,11 @@ The URL to wellknown is set to the Modelon Cloud instance of Impact by default. 
 ## How to understand
 
 Good starting points for understanding how this works is to look at the tests, in particular:
-- [../SEMLA/src/tests/test_tool.c](../SEMLA/src/tests/test_tool.c)
-  - (or the online version [SEMLA: test_tool.c](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/tests/test_tool.c)) tests how a modelica tool uses the LVE (LVE = Library Vendor Executable -- the executable that is responsible for licensing and encryption). The LVE includes the License Manager.
-- [./license_manager/tests/test_license_manager.cpp](./license_manager/tests/test_license_manager.cpp)
+- [./license_manager/tests/test_mfl_license_check.c](./license_manager/tests/test_mfl_license_check.c)
   - tests only the License Manager, without embedding it into an LVE.
+- [../SEMLA/src/tests/test_tool.c](../SEMLA/src/tests/test_tool.c) 
+  - (the online version of the test is available at [SEMLA: test_tool.c](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/tests/test_tool.c)) tests how a modelica tool uses the LVE (LVE = Library Vendor Executable -- the executable that is responsible for licensing and encryption). The LVE includes the License Manager.
+  - This test is disabled when building this License Manager. If you want to run this test, build SEMLA using the CMake build configuration in the SEMLA repo instead (this uses another License Manager), see build instructions in [../SEMLA/src/README.md](../SEMLA/src/README.md) (online version: [SEMLA: src/README.md](https://github.com/modelica/Encryption-and-Licensing/blob/master/src/README.md)).
 
 ## How to release
 

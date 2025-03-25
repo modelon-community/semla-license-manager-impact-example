@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #ifndef UNIT_TEST_UTIL_H_
 #define UNIT_TEST_UTIL_H_
 

@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 cmake_minimum_required(VERSION 3.20)
 project(sslecho)
 add_library(${PROJECT_NAME} STATIC sslecho.c)

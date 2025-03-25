@@ -1,4 +1,6 @@
+# Copyright (C) 2022 Modelon AB
 set(BITS "64")
+set(GLOBAL_LICENSE_FEATURE "IMPACT_LIBRARIES")
 
 set(LVE_KEYS_DIRECTORY "${CMAKE_SOURCE_DIR}/../openssl_keys")
 set(TOOL_PRIVATE_KEY_DIRECTORY "${CMAKE_SOURCE_DIR}/../openssl_keys")

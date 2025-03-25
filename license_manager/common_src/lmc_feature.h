@@ -1,3 +1,6 @@
+/* 
+ * Copyright (C) 2022 Modelon AB
+ */
 #ifndef LMC_FEATURE_H_
 #define LMC_FEATURE_H_
 #include <stddef.h>

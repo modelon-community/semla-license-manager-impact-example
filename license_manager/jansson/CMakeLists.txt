@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 
 set(JANSSON_ARCHIVE_URL "file://${CMAKE_SOURCE_DIR}/jansson-1.0.4.zip")
 set(JANSSON_ARCHIVE_EXPECTED_HASH_SHA256 "a7ee91d9e7823c63738a4fbc8e17fd6572bbd5beab536db762df26994d5b9599")

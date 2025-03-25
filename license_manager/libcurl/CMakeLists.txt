@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Modelon AB
 
 set(CURL_ARCHIVE_URL "file://${CMAKE_SOURCE_DIR}/curl-7_61_1.zip")
 set(CURL_ARCHIVE_EXPECTED_HASH_SHA256 "2b1cf218a1090556ad4437acbdca398e1d06bdac3091bc71b8a2a53a8026c776")

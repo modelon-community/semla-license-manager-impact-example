@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2022 Modelon AB
+ */
 #define _XOPEN_SOURCE 700
 #define _GNU_SOURCE
 #include <stdint.h>
@@ -316,7 +319,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
     json_t *json = json_loads(jsonbuf, 0, NULL);
     // feature to check out from the 'features' list in the json above
     char *requested_feature_existant = "Feature2";
-    char *required_users_existant = "example.email@example.com";
+    char *licensed_users_existant = "example.email@example.com";
     char *json_str = NULL;
     json_t *json2 = NULL;
     char *json2_str = NULL;
@@ -345,7 +348,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         mfl_jwt_unsetenv_any_jwt_env_var();
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
         if (status == MFL_ERROR) {
@@ -374,7 +377,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         // workaround for self-signed certificate not verifying
         setenv("MFL_SSL_NO_VERIFY", "1", 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
         if (status == MFL_ERROR) {
@@ -400,8 +403,10 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MFL_SSL_NO_VERIFY", "1", 1);
         // feature to check out from the 'features' list in the json above
         requested_feature_existant = "Feature1";
-        expected_error_message_start = "curl call failed: Couldn't connect to server";
-        status = mfl_jwt_component_license_check(requested_feature_existant, required_users_existant,
+        expected_error_message_start =
+            "curl call failed: Couldn't connect to server";
+        status = mfl_jwt_component_license_check(requested_feature_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -428,7 +433,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         sprintf(tmp_file_url, "%s%s", "file://", tmp_file_name);
         setenv("MODELON_LICENSE_USER_JWT_URL", tmp_file_url, 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         if (status == MFL_ERROR) {
             // fail the test and output the error message
@@ -446,7 +451,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         mfl_jwt_unsetenv_any_jwt_env_var();
         setenv("MODELON_LICENSE_USER_JWT_URL", "file:///nonexistent/file", 1);
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
     }
@@ -464,7 +469,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "with a supported protocol. Supported protocols: 'file://', "
             "'http://', or 'https://'";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -521,7 +526,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
                 "other.user2@example.com\r" // <-- Mac line ending
                 "*/\n"
                 "end license;\n",
-                required_users_existant);
+                licensed_users_existant);
         status = fclose(decrypted_license_file_fp);
         ck_assert_int_eq(status, 0);
 
@@ -654,7 +659,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: header claim 'kid' not found";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -700,7 +705,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: public key with kid not found";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -753,7 +758,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "error: jwt does not contain claim, or claim value is not a json "
             "string: format_version";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -807,7 +812,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "error: jwt does not contain claim, or claim value is not a json "
             "string: format_version";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -858,7 +863,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start = "error: claim 'format_version': actual "
                                        "value does not match expected value:";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -908,7 +913,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: jwt validation failed: status:";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -919,6 +924,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         free(actual_error_message_start);
     }
 
+#ifdef MFL_JWT_CHECK_FEATURES_LIST
     // test "error: jwt does not contain claim: features"
     {
         char error_msg_buffer[MFL_JWT_ERROR_MSG_BUFFER_SIZE];
@@ -952,7 +958,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start =
             "error: jwt does not contain claim: features";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -998,7 +1004,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start =
             "error: failed to load json: jwt claim 'features' json input:\n";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -1044,7 +1050,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         expected_error_message_start =
             "error: not a json array: jwt claim 'features' json input:\n";
         status = mfl_jwt_component_license_check(requested_feature_nonexistant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -1091,7 +1097,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
         setenv("MODELON_LICENSE_USER_JWT", jwt_token, 1);
         expected_error_message_start = "error: not a json string: value:";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -1140,7 +1146,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "error: requested feature not found in jwt claim 'features': "
             "requested feature:";
         status = mfl_jwt_component_license_check(requested_feature_nonexistant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
@@ -1150,6 +1156,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
                          expected_error_message_start);
         free(actual_error_message_start);
     }
+#endif
 
     // test "error: User '%s' is not licensed to use this library."
     {
@@ -1194,7 +1201,7 @@ START_TEST(test_mfl_jwt_checkout_checkin)
             "this library.The users that are licensed to use this library "
             "are:\nexample.email@example.com";
         status = mfl_jwt_component_license_check(requested_feature_existant,
-                                                 required_users_existant,
+                                                 licensed_users_existant,
                                                  error_msg_buffer);
         ck_assert_int_eq(status, MFL_ERROR);
         ck_assert_ptr_ne(error_msg_buffer, NULL);
