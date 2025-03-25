@@ -75,9 +75,9 @@ Locate the Modelon Impact project containing your library. On Modelon Impact clo
 
 Start by encrypting the library using packagetool:
 ```
-./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject/YourLibrary/
+./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/
 ```
-This will encrypt and package the library into `YouLibrary.mol` file. If necessary, you can download this file from the build folder. 
+This will encrypt and package the library into `YourLibrary.mol` file. If necessary, you can download this file from the build folder. 
 
 Next step is to add a Modelon Impact specific `project.json` file into the package.
 
@@ -90,7 +90,7 @@ Next step is to add a Modelon Impact specific `project.json` file into the packa
 
 Copy the `.impact` directory to the build directory:
 ```
-cp -a /home/jovyan/impact/local_projects/YouLibraryProject/.impact .
+cp -a /home/jovyan/impact/local_projects/YourLibraryProject/.impact .
 ```
 Adapt `build/.impact/project.json` file using a text editor to contain correct version information and skip any unneeded content sections.
 You may also consider specifying project icon to be displayed in Workspace Management app, e.g.:
