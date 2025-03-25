@@ -98,7 +98,7 @@ Copy the `.impact` directory to the build directory:
 ```
 cp -a /home/jovyan/impact/local_projects/YourLibraryProject/.impact .
 ```
-Adapt `build/.impact/project.json` file using a text editor to contain correct version information and skip any unneeded content sections.
+Adapt the file `.impact/project.json` in the build directory using a text editor to contain correct version information and skip any unneeded content sections.
 You may also consider specifying project icon to be displayed in Workspace Management app, e.g.:
 ```
 {
