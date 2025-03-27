@@ -65,13 +65,13 @@ For debugging reasons use `./build-debug.sh`. This script builds debug configura
    CMake Preset in [./CMakePresets.json](./CMakePresets.json)) to run the SEMLA test suite.
 
 ## How to Encrypt a Library
-The commands below can be run from the *build* directory created when running `build.sh` as described above. The examples assume running on https://impact.modelon.cloud. For a local setup you may need to adapt the path.
+The commands below can be run from the `build` directory created when running `build.sh` as described above. The examples assume running on <https://impact.modelon.cloud>. For a local setup you may need to adapt the path.
 
 ```
 cd build
 ```
 
-Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that. In this case the opened tab has an ending like 'folder=/home/jovyan/impact/local_projects/YourLibraryProject'. Copy the path after folder and add the folder name 'YourLibrary'.
+Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that. In this case the opened tab has an ending like `folder=/home/jovyan/impact/local_projects/YourLibraryProject`. Copy the path after folder and add the folder name `YourLibrary`.
 
 Start by encrypting the library using packagetool:
 ```
@@ -79,12 +79,12 @@ Start by encrypting the library using packagetool:
 ```
 This will encrypt and package the library into `YouLibrary.mol` file. If necessary, you can download this file from the build folder. 
 
-Next step is to add a Modelon Impact specific project json file into the package.
+Next step is to add a Modelon Impact specific `project.json` file into the package.
 
 > [!IMPORTANT]  
 > The version information in the `project.json` file is used for tracking dependencies
 > of workspaces and compiled models. It needs to follow the Semantic Versioning specification
-> (https://semver.org).
+> (<https://semver.org>).
 > You MUST always update the project version when releasing the library to users. The project version
 > does not need to match Modelica library version.
 
