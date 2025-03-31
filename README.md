@@ -41,21 +41,6 @@ SEMLA/
 semla-license-manager-impact-example/    # (this directory)
 ```
 
-## Create a license file
-The example uses a text file called `license.mo` placed in the top level directory of the library next to the 'package.mo'-file. It is possible to 
-configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json) (but you need to keep the `.mo` file extension).
-
-The license file in this example is expected to have one line per username for the users to be licensed, e.g.,
-```
-model license
-/*
-name.lastname@company.com
-*/
-end license;
-```
-
-The license manager searches for the first line that starts with `/*` in the file, and expects all lines to contain a username until it encounters a line that starts with `*/`.
-
 ## How to build
 In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
 
@@ -79,7 +64,20 @@ mkdir -p /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary && pr
 
 Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that. In this case the opened tab has an ending like `folder=/home/jovyan/impact/local_projects/YourLibraryProject`. Copy the path after folder and add the folder name `YourLibrary`.
 
-Start by encrypting the library using packagetool:
+Create a license file called `license.mo` placed in the top level directory of the library next to the file `package.mo`:
+```
+model license
+/*
+name.lastname@company.com
+*/
+end license;
+```
+
+Replace `name.lastname@company.com` with your username.
+
+The license file is expected to have one line per username for the users to be licensed. The license manager searches for the first line that starts with `/*` in the file, and expects all lines to contain a username until it encounters a line that starts with `*/`. It is possible to configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json) (but you need to keep the `.mo` file extension).
+
+Encrypt the library using `packagetool`:
 ```
 ./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/
 ```
