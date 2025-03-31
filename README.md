@@ -59,7 +59,10 @@ cd build
 **Tip (optional)**: If you want to test how to encrypt a library on a test library by copy-pasting the commands below into the terminal: Start by creating a test project called `YourLibraryProject`:
 
 ```
-mkdir -p /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary && printf "%s\n" "package YourLibrary" "end YourLibrary;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/package.mo
+mkdir -p /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/Example && \
+    printf "%s\n" "package YourLibrary" "end YourLibrary;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/package.mo && \
+    printf "%s\n" "within YourLibrary;" "package Example" "end Example;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/Example/package.mo && \
+    printf "%s\n" "within YourLibrary.Example;" "model SomeModel" "    Real x = time;" "end SomeModel;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/Example/SomeModel.mo
 ```
 
 Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that. In this case the opened tab has an ending like `folder=/home/jovyan/impact/local_projects/YourLibraryProject`. Copy the path after folder and add the folder name `YourLibrary`.
