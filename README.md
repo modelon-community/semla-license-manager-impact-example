@@ -186,7 +186,9 @@ The URL to wellknown is set to the Modelon Cloud instance of Impact by default. 
 
 ## How to understand
 
-Good starting points for understanding how this works is to look at the tests, in particular:
+The implementation of the License Manager is specified in <https://help.modelon.com/latest/articles/how_to_third_party_licensing/>.
+
+Good starting points for understanding how the License Manager works is to look at the tests, in particular:
 - [./license_manager/tests/test_mfl_license_check.c](./license_manager/tests/test_mfl_license_check.c)
   - tests only the License Manager, without embedding it into an LVE.
 - [../SEMLA/src/tests/test_tool.c](../SEMLA/src/tests/test_tool.c) 
