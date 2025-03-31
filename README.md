@@ -84,7 +84,7 @@ Encrypt the library using `packagetool`:
 ```
 ./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/
 ```
-This will encrypt and package the library into `YourLibrary.mol` file. If necessary, you can download this file from the build folder. 
+This will encrypt and package the library into the file `YourLibrary.mol`. If necessary, you can download this file from the build folder. 
 
 Next step is to add a Modelon Impact specific `project.json` file into the package.
 
