@@ -41,21 +41,6 @@ SEMLA/
 semla-license-manager-impact-example/    # (this directory)
 ```
 
-## Create a license file
-The example uses a text file called `license.mo` placed in the top level directory of the library next to the 'package.mo'-file. It is possible to 
-configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json) (but you need to keep the `.mo` file extension).
-
-The license file in this example is expected to have one line per username for the users to be licensed, e.g.,
-```
-model license
-/*
-name.lastname@company.com
-*/
-end license;
-```
-
-The license manager searches for the first line that starts with `/*` in the file, and expects all lines to contain a username until it encounters a line that starts with `*/`.
-
 ## How to build
 In the default case you can simply run `./build.sh`. This only builds a release version of the LVE and supporting tools. This is enough for using the example as is.
 
@@ -71,13 +56,35 @@ The commands below can be run from the `build` directory created when running `b
 cd build
 ```
 
+**Tip (optional)**: If you want to test how to encrypt a library on a test library by copy-pasting the commands below into the terminal: Start by creating a test project called `YourLibraryProject`:
+
+```
+mkdir -p /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/Example && \
+    printf "%s\n" "package YourLibrary" "end YourLibrary;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/package.mo && \
+    printf "%s\n" "within YourLibrary;" "package Example" "end Example;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/Example/package.mo && \
+    printf "%s\n" "within YourLibrary.Example;" "model SomeModel" "    Real x = time;" "end SomeModel;" > /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/Example/SomeModel.mo
+```
+
 Locate the Modelon Impact project containing your library. On Modelon Impact cloud installation you can use VSCode in browser launched from the Project explorer app to do that. In this case the opened tab has an ending like `folder=/home/jovyan/impact/local_projects/YourLibraryProject`. Copy the path after folder and add the folder name `YourLibrary`.
 
-Start by encrypting the library using packagetool:
+Create a license file called `license.mo` placed in the top level directory of the library next to the file `package.mo`:
 ```
-./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YouLibraryProject/YourLibrary/
+model license
+/*
+name.lastname@company.com
+*/
+end license;
 ```
-This will encrypt and package the library into `YouLibrary.mol` file. If necessary, you can download this file from the build folder. 
+
+Replace `name.lastname@company.com` with your username.
+
+The license file is expected to have one line per username for the users to be licensed. The license manager searches for the first line that starts with `/*` in the file, and expects all lines to contain a username until it encounters a line that starts with `*/`. It is possible to configure a different license file name by changing `MFL_JWT_LICENSE_FILE_FILENAME` in [./CMakePresets.json](./CMakePresets.json) (but you need to keep the `.mo` file extension).
+
+Encrypt the library using `packagetool`:
+```
+./packagetool -version 1.1 -language 3.2 -encrypt "true" -librarypath /home/jovyan/impact/local_projects/YourLibraryProject/YourLibrary/
+```
+This will encrypt and package the library into the file `YourLibrary.mol`. If necessary, you can download this file from the build folder. 
 
 Next step is to add a Modelon Impact specific `project.json` file into the package.
 
@@ -90,9 +97,9 @@ Next step is to add a Modelon Impact specific `project.json` file into the packa
 
 Copy the `.impact` directory to the build directory:
 ```
-cp -a /home/jovyan/impact/local_projects/YouLibraryProject/.impact .
+cp -a /home/jovyan/impact/local_projects/YourLibraryProject/.impact .
 ```
-Adapt `build/.impact/project.json` file using a text editor to contain correct version information and skip any unneeded content sections.
+Adapt the file `.impact/project.json` in the build directory using a text editor to contain correct version information and skip any unneeded content sections.
 You may also consider specifying project icon to be displayed in Workspace Management app, e.g.:
 ```
 {
